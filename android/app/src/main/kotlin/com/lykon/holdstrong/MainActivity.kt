@@ -1,0 +1,5 @@
+package com.lykon.holdstrong
+
+import io.flutter.embedding.android.FlutterActivity
+
+class MainActivity : FlutterActivity()
