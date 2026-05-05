@@ -10,8 +10,6 @@ class CelebrationData {
     required this.targetAmount,
     required this.streakDays,
     required this.message,
-    this.caloriesAvoided,
-    this.totalCaloriesThisMonth,
     this.fitnessMilestone,
   });
 
@@ -23,10 +21,6 @@ class CelebrationData {
   final double targetAmount;
   final int streakDays;
   final String message;
-
-  // Fitness-only
-  final int? caloriesAvoided;
-  final int? totalCaloriesThisMonth;
   final String? fitnessMilestone;
 
   bool get isFitnessGoal => goalType == GoalType.fitnessFinancial;

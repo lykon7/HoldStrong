@@ -21,6 +21,14 @@ class ResistRepository {
         .watch(fireImmediately: true);
   }
 
+  Stream<List<ResistEntry>> watchRecentEntries({int limit = 3}) {
+    return _isar.resistEntrys
+        .where()
+        .sortByLoggedAtDesc()
+        .limit(limit)
+        .watch(fireImmediately: true);
+  }
+
   Future<List<ResistEntry>> getRecentEntries({int limit = 3}) async {
     return _isar.resistEntrys
         .where()

@@ -2,8 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/resist_entry.dart';
 import 'goal_providers.dart';
 
-final recentEntriesProvider = FutureProvider<List<ResistEntry>>((ref) async {
-  return ref.watch(resistRepositoryProvider).getRecentEntries(limit: 3);
+final recentEntriesProvider = StreamProvider<List<ResistEntry>>((ref) {
+  return ref.watch(resistRepositoryProvider).watchRecentEntries(limit: 3);
 });
 
 final allEntriesProvider = StreamProvider<List<ResistEntry>>((ref) {
@@ -11,22 +11,31 @@ final allEntriesProvider = StreamProvider<List<ResistEntry>>((ref) {
 });
 
 /// Streak for the active goal (consecutive days with at least one entry).
-final streakProvider = FutureProvider<int>((ref) async {
+/// Uses a StreamProvider so it reacts to every new resist entry.
+final streakProvider = StreamProvider<int>((ref) async* {
   final activeGoal = await ref.watch(activeGoalProvider.future);
-  if (activeGoal == null) return 0;
-  final entries = await ref
+  if (activeGoal == null) {
+    yield 0;
+    return;
+  }
+  yield* ref
       .watch(resistRepositoryProvider)
-      .getAllEntriesForGoal(activeGoal.uuid);
-  return _calculateStreak(entries);
+      .watchEntriesForGoal(activeGoal.uuid)
+      .map(_calculateStreak);
 });
 
 /// Total saved for the active goal.
-final totalSavedForActiveGoalProvider = FutureProvider<double>((ref) async {
+/// Uses a StreamProvider so the progress card updates in real-time.
+final totalSavedForActiveGoalProvider = StreamProvider<double>((ref) async* {
   final activeGoal = await ref.watch(activeGoalProvider.future);
-  if (activeGoal == null) return 0.0;
-  return ref
+  if (activeGoal == null) {
+    yield 0.0;
+    return;
+  }
+  yield* ref
       .watch(resistRepositoryProvider)
-      .getTotalSavedForGoal(activeGoal.uuid);
+      .watchEntriesForGoal(activeGoal.uuid)
+      .map((entries) => entries.fold<double>(0.0, (sum, e) => sum + e.amountLkr));
 });
 
 int _calculateStreak(List<ResistEntry> entries) {

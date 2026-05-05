@@ -5,17 +5,13 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/theme.dart';
-import '../../core/constants.dart';
 import '../../core/message_bank.dart';
-import '../../core/calorie_library.dart';
 import '../../data/models/resist_entry.dart';
 import '../../data/models/goal.dart';
 import '../../domain/models/celebration_data.dart';
 import '../../domain/providers/goal_providers.dart';
-import '../../domain/providers/resist_providers.dart';
 import '../../domain/providers/label_providers.dart';
 import 'widgets/label_chips.dart';
-import 'widgets/calorie_input.dart';
 
 class LogScreen extends ConsumerStatefulWidget {
   const LogScreen({super.key});
@@ -27,7 +23,6 @@ class LogScreen extends ConsumerStatefulWidget {
 class _LogScreenState extends ConsumerState<LogScreen> {
   final _amountCtrl = TextEditingController();
   final _labelCtrl = TextEditingController();
-  final _calorieCtrl = TextEditingController();
   final _amountFocus = FocusNode();
   final _uuid = const Uuid();
 
@@ -41,21 +36,12 @@ class _LogScreenState extends ConsumerState<LogScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _amountFocus.requestFocus();
     });
-    _labelCtrl.addListener(_onLabelChanged);
-  }
-
-  void _onLabelChanged() {
-    final cal = CalorieLibrary.getSuggestion(_labelCtrl.text);
-    if (cal != null && _calorieCtrl.text.isEmpty) {
-      _calorieCtrl.text = cal.toString();
-    }
   }
 
   @override
   void dispose() {
     _amountCtrl.dispose();
     _labelCtrl.dispose();
-    _calorieCtrl.dispose();
     _amountFocus.dispose();
     super.dispose();
   }
@@ -75,22 +61,19 @@ class _LogScreenState extends ConsumerState<LogScreen> {
     }
 
     final label = _labelCtrl.text.trim().isEmpty ? null : _labelCtrl.text.trim();
-    final caloriesStr = _calorieCtrl.text.trim();
-    final calories = caloriesStr.isEmpty ? null : int.tryParse(caloriesStr);
 
     final entry = ResistEntry()
       ..uuid = _uuid.v4()
       ..goalUuid = activeGoal.uuid
       ..amountLkr = amount
       ..label = label
-      ..caloriesAvoided = calories
       ..loggedAt = _loggedAt;
 
     final resistRepo = ref.read(resistRepositoryProvider);
     await resistRepo.saveEntry(entry);
 
     if (label != null) {
-      await ref.read(labelRepositoryProvider).recordLabelUse(label, defaultCalories: calories);
+      await ref.read(labelRepositoryProvider).recordLabelUse(label);
     }
 
     // Build celebration data
@@ -109,7 +92,6 @@ class _LogScreenState extends ConsumerState<LogScreen> {
             goal: activeGoal.name,
             progress: progressPct.toStringAsFixed(1),
             streak: streak.toString(),
-            calories: calories?.toString() ?? '0',
           )
         : MessageBank.pickFinancial(
             amount: fmt.format(amount),
@@ -117,16 +99,6 @@ class _LogScreenState extends ConsumerState<LogScreen> {
             progress: progressPct.toStringAsFixed(1),
             streak: streak.toString(),
           );
-
-    // Monthly calories for fitness
-    int? totalCaloriesThisMonth;
-    if (activeGoal.type == GoalType.fitnessFinancial) {
-      final now = DateTime.now();
-      final monthStart = DateTime(now.year, now.month, 1);
-      totalCaloriesThisMonth = allEntries
-          .where((e) => e.loggedAt.isAfter(monthStart) && e.caloriesAvoided != null)
-          .fold<int>(0, (s, e) => s + (e.caloriesAvoided ?? 0));
-    }
 
     final celebData = CelebrationData(
       amountSaved: amount,
@@ -137,8 +109,6 @@ class _LogScreenState extends ConsumerState<LogScreen> {
       targetAmount: activeGoal.targetAmountLkr,
       streakDays: streak,
       message: message,
-      caloriesAvoided: calories,
-      totalCaloriesThisMonth: totalCaloriesThisMonth,
       fitnessMilestone: activeGoal.fitnessMilestone,
     );
 
@@ -158,8 +128,11 @@ class _LogScreenState extends ConsumerState<LogScreen> {
     if (days.first.difference(today).inDays.abs() > 1) return 0;
     int streak = 1;
     for (int i = 0; i < days.length - 1; i++) {
-      if (days[i].difference(days[i + 1]).inDays == 1) streak++;
-      else break;
+      if (days[i].difference(days[i + 1]).inDays == 1) {
+        streak++;
+      } else {
+        break;
+      }
     }
     return streak;
   }
@@ -192,12 +165,15 @@ class _LogScreenState extends ConsumerState<LogScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final activeGoal = ref.watch(activeGoalProvider).value;
-    final isFitness = activeGoal?.type == GoalType.fitnessFinancial;
     final dateFmt = DateFormat('dd MMM yyyy, HH:mm');
+
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundPrimary,
+      // Disable automatic resize so keyboard doesn't push the pinned button up.
+      // We manage keyboard insets manually via viewInsets.bottom.
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text('LOG A RESIST'),
         leading: IconButton(
@@ -209,7 +185,9 @@ class _LogScreenState extends ConsumerState<LogScreen> {
         children: [
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              // Extra bottom padding keeps content visible above the confirm
+              // button even when the keyboard is open.
+              padding: EdgeInsets.fromLTRB(16, 16, 16, keyboardHeight + 80),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -254,9 +232,6 @@ class _LogScreenState extends ConsumerState<LogScreen> {
                   LabelChips(
                     onSelected: (name, calories) {
                       _labelCtrl.text = name;
-                      if (calories != null && _calorieCtrl.text.isEmpty) {
-                        _calorieCtrl.text = calories.toString();
-                      }
                     },
                   ),
                   const SizedBox(height: 8),
@@ -273,17 +248,6 @@ class _LogScreenState extends ConsumerState<LogScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-
-                  // Calorie input (fitness goals only)
-                  if (isFitness) ...[
-                    _SectionLabel('CALORIES AVOIDED (optional)'),
-                    const SizedBox(height: 8),
-                    CalorieInput(
-                      controller: _calorieCtrl,
-                      labelController: _labelCtrl,
-                    ),
-                    const SizedBox(height: 20),
-                  ],
 
                   // Date/time
                   _SectionLabel('DATE'),
@@ -319,10 +283,9 @@ class _LogScreenState extends ConsumerState<LogScreen> {
             ),
           ),
 
-          // Confirm button pinned at bottom
+          // Confirm button — stays pinned just above the keyboard at all times.
           Padding(
-            padding: EdgeInsets.fromLTRB(
-                16, 8, 16, MediaQuery.of(context).viewInsets.bottom + 16),
+            padding: EdgeInsets.fromLTRB(16, 8, 16, keyboardHeight + 16),
             child: ElevatedButton(
               onPressed: _saving ? null : _save,
               child: _saving

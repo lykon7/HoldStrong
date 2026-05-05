@@ -114,9 +114,11 @@ class _GoalFormScreenState extends ConsumerState<GoalFormScreen> {
   @override
   Widget build(BuildContext context) {
     final dateFmt = DateFormat('dd MMM yyyy');
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundPrimary,
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text(_isEditing ? 'EDIT GOAL' : 'NEW GOAL'),
       ),
@@ -126,7 +128,7 @@ class _GoalFormScreenState extends ConsumerState<GoalFormScreen> {
           children: [
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.fromLTRB(16, 16, 16, keyboardHeight + 80),
                 children: [
                   // Goal name
                   _Label('GOAL NAME'),
@@ -254,7 +256,7 @@ class _GoalFormScreenState extends ConsumerState<GoalFormScreen> {
             ),
 
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+              padding: EdgeInsets.fromLTRB(16, 8, 16, keyboardHeight + 16),
               child: ElevatedButton(
                 onPressed: _saving ? null : _save,
                 child: _saving

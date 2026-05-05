@@ -1,7 +1,6 @@
 import 'package:isar/isar.dart';
 import 'package:uuid/uuid.dart';
 import '../models/craving_label.dart';
-import '../../core/calorie_library.dart';
 
 class LabelRepository {
   LabelRepository(this._isar);
@@ -20,7 +19,7 @@ class LabelRepository {
     return _isar.cravingLabels.where().sortByLastUsedDesc().findAll();
   }
 
-  Future<void> recordLabelUse(String name, {int? defaultCalories}) async {
+  Future<void> recordLabelUse(String name) async {
     if (name.trim().isEmpty) return;
     final normalised = name.trim().toLowerCase();
 
@@ -30,18 +29,13 @@ class LabelRepository {
       if (existing != null) {
         existing.useCount += 1;
         existing.lastUsed = DateTime.now();
-        if (defaultCalories != null) {
-          existing.defaultCalories = defaultCalories;
-        }
         await _isar.cravingLabels.put(existing);
       } else {
         final label = CravingLabel()
           ..uuid = _uuid.v4()
           ..name = normalised
           ..useCount = 1
-          ..lastUsed = DateTime.now()
-          ..defaultCalories =
-              defaultCalories ?? CalorieLibrary.getSuggestion(normalised);
+          ..lastUsed = DateTime.now();
         await _isar.cravingLabels.put(label);
       }
     });

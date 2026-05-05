@@ -95,42 +95,20 @@ class _CelebrationScreenState extends State<CelebrationScreen> {
                       ),
                     ),
 
-                    // Fitness section
-                    if (data.isFitnessGoal && data.caloriesAvoided != null) ...[
+                    // Fitness milestone — shown for all fitness goals
+                    if (data.isFitnessGoal && data.fitnessMilestone != null) ...[
                       const SizedBox(height: 24),
                       const Divider(color: AppColors.cardBorder),
                       const SizedBox(height: 16),
                       Text(
-                        '~${data.caloriesAvoided} CALORIES AVOIDED',
+                        '"${data.fitnessMilestone}" — you are doing it.',
                         style: const TextStyle(
-                          fontFamily: 'Rajdhani',
-                          fontWeight: FontWeight.w700,
-                          fontSize: 28,
-                          letterSpacing: 1,
-                          color: AppColors.accentGold,
+                          fontFamily: 'IBMPlexMono',
+                          fontSize: 13,
+                          color: AppColors.textPrimary,
+                          fontStyle: FontStyle.italic,
                         ),
                       ),
-                      if (data.totalCaloriesThisMonth != null)
-                        Text(
-                          'Total avoided this month: ${fmt.format(data.totalCaloriesThisMonth!)} kcal',
-                          style: const TextStyle(
-                            fontFamily: 'IBMPlexMono',
-                            fontSize: 11,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      if (data.fitnessMilestone != null) ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          '"${data.fitnessMilestone}" — you are doing it.',
-                          style: const TextStyle(
-                            fontFamily: 'IBMPlexMono',
-                            fontSize: 12,
-                            color: AppColors.textPrimary,
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                      ],
                     ],
 
                     const Spacer(flex: 3),

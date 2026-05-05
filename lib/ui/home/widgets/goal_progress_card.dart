@@ -52,18 +52,6 @@ class GoalProgressCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
 
-          // Streak
-          if (streakDays > 0)
-            Text(
-              'DAY $streakDays',
-              style: const TextStyle(
-                fontFamily: 'IBMPlexMono',
-                fontSize: 11,
-                letterSpacing: 2,
-                color: AppColors.accentGold,
-              ),
-            ),
-
           const Spacer(),
 
           // Amount display

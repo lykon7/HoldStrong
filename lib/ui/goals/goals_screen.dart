@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme.dart';
 import '../../domain/providers/goal_providers.dart';
-import '../../data/models/goal.dart';
 import 'widgets/goal_card.dart';
 
 class GoalsScreen extends ConsumerWidget {
