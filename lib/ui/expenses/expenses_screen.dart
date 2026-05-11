@@ -46,17 +46,64 @@ class ExpensesScreen extends ConsumerWidget {
                 if (entries.isEmpty) {
                   return const _EmptyState();
                 }
-                return ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-                  itemCount: entries.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+
+                // Build grouped flat list: [_DayHeader, ExpenseEntry, ...]
+                final now = DateTime.now();
+                final today =
+                    DateTime(now.year, now.month, now.day);
+                final yesterday =
+                    today.subtract(const Duration(days: 1));
+
+                final items = <Object>[];
+                DateTime? lastDay;
+
+                for (final entry in entries) {
+                  final entryDay = DateTime(
+                    entry.loggedAt.year,
+                    entry.loggedAt.month,
+                    entry.loggedAt.day,
+                  );
+                  if (lastDay == null || entryDay != lastDay) {
+                    // Compute day total
+                    final dayTotal = entries
+                        .where((e) =>
+                            DateTime(e.loggedAt.year, e.loggedAt.month,
+                                e.loggedAt.day) ==
+                            entryDay)
+                        .fold<double>(0.0, (s, e) => s + e.amount);
+
+                    String label;
+                    if (entryDay == today) {
+                      label = 'TODAY';
+                    } else if (entryDay == yesterday) {
+                      label = 'YESTERDAY';
+                    } else {
+                      label =
+                          DateFormat('EEEE, d MMM yyyy').format(entryDay).toUpperCase();
+                    }
+                    items.add(_DayHeader(label: label, total: dayTotal));
+                    lastDay = entryDay;
+                  }
+                  items.add(entry);
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                  itemCount: items.length,
                   itemBuilder: (context, index) {
-                    final entry = entries[index];
-                    return _ExpenseRow(
-                      entry: entry,
-                      onDelete: () => ref
-                          .read(expenseRepositoryProvider)
-                          .deleteEntry(entry.uuid),
+                    final item = items[index];
+                    if (item is _DayHeader) {
+                      return _DayHeaderTile(header: item);
+                    }
+                    final entry = item as ExpenseEntry;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: _ExpenseRow(
+                        entry: entry,
+                        onDelete: () => ref
+                            .read(expenseRepositoryProvider)
+                            .deleteEntry(entry.uuid),
+                      ),
                     );
                   },
                 );
@@ -239,6 +286,62 @@ class _SummaryCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Day grouping helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _DayHeader {
+  const _DayHeader({required this.label, required this.total});
+  final String label;
+  final double total;
+}
+
+class _DayHeaderTile extends StatelessWidget {
+  const _DayHeaderTile({required this.header});
+  final _DayHeader header;
+
+  @override
+  Widget build(BuildContext context) {
+    final fmt = NumberFormat('#,##0.00', 'en_US');
+    return Padding(
+      padding: const EdgeInsets.only(top: 16, bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
+        children: [
+          Text(
+            header.label,
+            style: const TextStyle(
+              fontFamily: 'IBMPlexMono',
+              fontSize: 10,
+              letterSpacing: 2,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Container(
+              height: 1,
+              color: AppColors.cardBorder,
+              margin: const EdgeInsets.only(bottom: 2),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            'Rs ${fmt.format(header.total)}',
+            style: const TextStyle(
+              fontFamily: 'IBMPlexMono',
+              fontSize: 10,
+              letterSpacing: 1,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Expense row with swipe-to-delete
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -251,7 +354,7 @@ class _ExpenseRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fmt = NumberFormat('#,##0.00', 'en_US');
-    final timeFmt = DateFormat('dd MMM yyyy, HH:mm');
+    final timeFmt = DateFormat('HH:mm');
 
     return Dismissible(
       key: ValueKey(entry.uuid),
