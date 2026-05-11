@@ -11,6 +11,7 @@ import '../ui/goals/goals_screen.dart';
 import '../ui/goals/goal_form_screen.dart';
 import '../ui/settings/settings_screen.dart';
 import '../ui/expenses/expenses_screen.dart';
+import '../ui/income/income_screen.dart';
 
 final goRouterProvider = Provider<GoRouter>((ref) {
   final activeGoalNotifier = ref.watch(activeGoalProvider);
@@ -47,6 +48,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/expenses',
             builder: (context, state) => const ExpensesScreen(),
+          ),
+          GoRoute(
+            path: '/income',
+            builder: (context, state) => const IncomeScreen(),
           ),
         ],
       ),
@@ -120,7 +125,7 @@ class _MainShell extends ConsumerStatefulWidget {
 class _MainShellState extends ConsumerState<_MainShell> {
   int _selectedIndex = 0;
 
-  static const _tabs = ['/', '/history', '/goals', '/expenses'];
+  static const _tabs = ['/', '/history', '/goals', '/expenses', '/income'];
 
   @override
   Widget build(BuildContext context) {
@@ -137,6 +142,7 @@ class _MainShellState extends ConsumerState<_MainShell> {
           NavigationDestination(icon: Icon(Icons.history), label: 'HISTORY'),
           NavigationDestination(icon: Icon(Icons.flag_outlined), label: 'GOALS'),
           NavigationDestination(icon: Icon(Icons.receipt_long_outlined), label: 'EXPENSES'),
+          NavigationDestination(icon: Icon(Icons.account_balance_wallet_outlined), label: 'INCOME'),
         ],
       ),
     );
