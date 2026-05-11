@@ -1,6 +1,9 @@
 subprojects {
     afterEvaluate { project ->
         if (project.hasProperty("android")) {
+            project.android {
+                compileSdkVersion 36
+            }
             try {
                 if (project.android.namespace == null) {
                     def manifestPath = project.file("src/main/AndroidManifest.xml")
