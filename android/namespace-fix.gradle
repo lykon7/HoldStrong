@@ -1,0 +1,24 @@
+subprojects {
+    afterEvaluate { project ->
+        if (project.hasProperty("android")) {
+            try {
+                if (project.android.namespace == null) {
+                    def manifestPath = project.file("src/main/AndroidManifest.xml")
+                    if (manifestPath.exists()) {
+                        def parsed = new XmlSlurper().parse(manifestPath)
+                        def packageAttr = parsed.@package.text()
+                        if (packageAttr) {
+                            project.android.namespace = packageAttr
+                        } else if (project.name == "isar_flutter_libs") {
+                            project.android.namespace = "dev.isar.isar_flutter_libs"
+                        }
+                    } else if (project.name == "isar_flutter_libs") {
+                        project.android.namespace = "dev.isar.isar_flutter_libs"
+                    }
+                }
+            } catch (Exception e) {
+                // Ignore errors
+            }
+        }
+    }
+}
