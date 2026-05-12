@@ -6,9 +6,10 @@ import 'package:uuid/uuid.dart';
 import '../../core/theme.dart';
 import '../../data/models/income_entry.dart';
 import '../../domain/providers/income_providers.dart';
+import '../../domain/providers/fund_providers.dart';
 
-// Default income source chips
 const _kDefaultSources = ['DA', 'PM', 'UB'];
+const _kGreen = Color(0xFF3DAA6E);
 
 class IncomeScreen extends ConsumerWidget {
   const IncomeScreen({super.key});
@@ -28,16 +29,14 @@ class IncomeScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.add, size: 22),
             tooltip: 'Add Income',
-            onPressed: () => _showAddIncomeSheet(context, ref),
+            onPressed: () => _showAddSheet(context, ref),
           ),
         ],
       ),
       body: Column(
         children: [
-          // ── Summary strip ──────────────────────────────────────────────
           _SummaryStrip(daily: daily, weekly: weekly, monthly: monthly),
           const Divider(height: 1),
-          // ── Entry list ────────────────────────────────────────────────
           Expanded(
             child: allIncome.when(
               loading: () => const Center(
@@ -45,9 +44,7 @@ class IncomeScreen extends ConsumerWidget {
               ),
               error: (e, _) => Center(child: Text('Error: $e')),
               data: (entries) {
-                if (entries.isEmpty) {
-                  return const _EmptyState();
-                }
+                if (entries.isEmpty) return const _EmptyState();
 
                 final now = DateTime.now();
                 final today = DateTime(now.year, now.month, now.day);
@@ -55,7 +52,6 @@ class IncomeScreen extends ConsumerWidget {
 
                 final items = <Object>[];
                 DateTime? lastDay;
-
                 for (final entry in entries) {
                   final entryDay = DateTime(
                     entry.loggedAt.year,
@@ -69,7 +65,6 @@ class IncomeScreen extends ConsumerWidget {
                                 e.loggedAt.day) ==
                             entryDay)
                         .fold<double>(0.0, (s, e) => s + e.amount);
-
                     String label;
                     if (entryDay == today) {
                       label = 'TODAY';
@@ -112,8 +107,8 @@ class IncomeScreen extends ConsumerWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddIncomeSheet(context, ref),
-        backgroundColor: const Color(0xFF3DAA6E),
+        onPressed: () => _showAddSheet(context, ref),
+        backgroundColor: _kGreen,
         foregroundColor: AppColors.backgroundPrimary,
         elevation: 0,
         shape: const RoundedRectangleBorder(
@@ -124,7 +119,7 @@ class IncomeScreen extends ConsumerWidget {
     );
   }
 
-  void _showAddIncomeSheet(BuildContext context, WidgetRef ref) {
+  void _showAddSheet(BuildContext context, WidgetRef ref) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -140,20 +135,12 @@ class IncomeScreen extends ConsumerWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Summary strip
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Summary strip ─────────────────────────────────────────────────────────────
 
 class _SummaryStrip extends StatelessWidget {
-  const _SummaryStrip({
-    required this.daily,
-    required this.weekly,
-    required this.monthly,
-  });
-
-  final AsyncValue<double> daily;
-  final AsyncValue<double> weekly;
-  final AsyncValue<double> monthly;
+  const _SummaryStrip(
+      {required this.daily, required this.weekly, required this.monthly});
+  final AsyncValue<double> daily, weekly, monthly;
 
   @override
   Widget build(BuildContext context) {
@@ -162,8 +149,7 @@ class _SummaryStrip extends StatelessWidget {
     final weekStart =
         todayStart.subtract(Duration(days: todayStart.weekday - 1));
     final weekEnd = weekStart.add(const Duration(days: 6));
-    final dayFmt = DateFormat('d MMM');
-    final monthFmt = DateFormat('MMMM yyyy');
+    final d = DateFormat('d MMM');
 
     return SizedBox(
       height: 130,
@@ -172,26 +158,22 @@ class _SummaryStrip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         children: [
           _SummaryCard(
-            label: 'TODAY',
-            sublabel: dayFmt.format(now),
-            value: daily,
-            accentColor: const Color(0xFF3DAA6E),
-          ),
+              label: 'TODAY',
+              sublabel: d.format(now),
+              value: daily,
+              accent: _kGreen),
           const SizedBox(width: 12),
           _SummaryCard(
-            label: 'THIS WEEK',
-            sublabel:
-                '${dayFmt.format(weekStart)} – ${dayFmt.format(weekEnd)}',
-            value: weekly,
-            accentColor: const Color(0xFF4A90D9),
-          ),
+              label: 'THIS WEEK',
+              sublabel: '${d.format(weekStart)} – ${d.format(weekEnd)}',
+              value: weekly,
+              accent: const Color(0xFF4A90D9)),
           const SizedBox(width: 12),
           _SummaryCard(
-            label: 'THIS MONTH',
-            sublabel: monthFmt.format(now),
-            value: monthly,
-            accentColor: const Color(0xFF7B68EE),
-          ),
+              label: 'THIS MONTH',
+              sublabel: DateFormat('MMMM yyyy').format(now),
+              value: monthly,
+              accent: const Color(0xFF7B68EE)),
         ],
       ),
     );
@@ -199,22 +181,18 @@ class _SummaryStrip extends StatelessWidget {
 }
 
 class _SummaryCard extends StatelessWidget {
-  const _SummaryCard({
-    required this.label,
-    required this.sublabel,
-    required this.value,
-    required this.accentColor,
-  });
-
-  final String label;
-  final String sublabel;
+  const _SummaryCard(
+      {required this.label,
+      required this.sublabel,
+      required this.value,
+      required this.accent});
+  final String label, sublabel;
   final AsyncValue<double> value;
-  final Color accentColor;
+  final Color accent;
 
   @override
   Widget build(BuildContext context) {
     final fmt = NumberFormat('#,##0.00', 'en_US');
-
     return Container(
       width: 200,
       padding: const EdgeInsets.all(14),
@@ -227,65 +205,48 @@ class _SummaryCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 3,
-                height: 12,
-                decoration: BoxDecoration(
-                  color: accentColor,
-                  borderRadius: BorderRadius.circular(1),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                label,
+          Row(children: [
+            Container(
+              width: 3, height: 12,
+              decoration: BoxDecoration(
+                  color: accent, borderRadius: BorderRadius.circular(1)),
+            ),
+            const SizedBox(width: 6),
+            Text(label,
                 style: const TextStyle(
-                  fontFamily: 'IBMPlexMono',
-                  fontSize: 10,
-                  letterSpacing: 2,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
+                    fontFamily: 'IBMPlexMono',
+                    fontSize: 10,
+                    letterSpacing: 2,
+                    color: AppColors.textSecondary)),
+          ]),
           value.when(
             loading: () => const SizedBox(
-              width: 16,
-              height: 16,
+              width: 16, height: 16,
               child: CircularProgressIndicator(
                   strokeWidth: 1.5, color: AppColors.accentGold),
             ),
             error: (_, __) => const Text('—'),
-            data: (total) => Text(
-              'Rs ${fmt.format(total)}',
-              style: TextStyle(
-                fontFamily: 'Rajdhani',
-                fontWeight: FontWeight.w700,
-                fontSize: 22,
-                color: accentColor,
-                letterSpacing: 0.5,
-              ),
-            ),
+            data: (v) => Text('Rs ${fmt.format(v)}',
+                style: TextStyle(
+                    fontFamily: 'Rajdhani',
+                    fontWeight: FontWeight.w700,
+                    fontSize: 22,
+                    color: accent,
+                    letterSpacing: 0.5)),
           ),
-          Text(
-            sublabel,
-            style: const TextStyle(
-              fontFamily: 'IBMPlexMono',
-              fontSize: 9,
-              color: AppColors.textSecondary,
-              letterSpacing: 0.5,
-            ),
-          ),
+          Text(sublabel,
+              style: const TextStyle(
+                  fontFamily: 'IBMPlexMono',
+                  fontSize: 9,
+                  color: AppColors.textSecondary,
+                  letterSpacing: 0.5)),
         ],
       ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Day grouping helpers
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Day grouping ──────────────────────────────────────────────────────────────
 
 class _DayHeader {
   const _DayHeader({required this.label, required this.total});
@@ -306,46 +267,36 @@ class _DayHeaderTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.baseline,
         textBaseline: TextBaseline.alphabetic,
         children: [
-          Text(
-            header.label,
-            style: const TextStyle(
-              fontFamily: 'IBMPlexMono',
-              fontSize: 10,
-              letterSpacing: 2,
-              color: AppColors.textSecondary,
-            ),
-          ),
+          Text(header.label,
+              style: const TextStyle(
+                  fontFamily: 'IBMPlexMono',
+                  fontSize: 10,
+                  letterSpacing: 2,
+                  color: AppColors.textSecondary)),
           const SizedBox(width: 8),
           Expanded(
             child: Container(
-              height: 1,
-              color: AppColors.cardBorder,
-              margin: const EdgeInsets.only(bottom: 2),
-            ),
+                height: 1,
+                color: AppColors.cardBorder,
+                margin: const EdgeInsets.only(bottom: 2)),
           ),
           const SizedBox(width: 8),
-          Text(
-            'Rs ${fmt.format(header.total)}',
-            style: const TextStyle(
-              fontFamily: 'IBMPlexMono',
-              fontSize: 10,
-              letterSpacing: 1,
-              color: AppColors.textSecondary,
-            ),
-          ),
+          Text('Rs ${fmt.format(header.total)}',
+              style: const TextStyle(
+                  fontFamily: 'IBMPlexMono',
+                  fontSize: 10,
+                  letterSpacing: 1,
+                  color: AppColors.textSecondary)),
         ],
       ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Income row with swipe-to-delete
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Income row ────────────────────────────────────────────────────────────────
 
 class _IncomeRow extends StatelessWidget {
   const _IncomeRow({required this.entry, required this.onDelete});
-
   final IncomeEntry entry;
   final VoidCallback onDelete;
 
@@ -377,35 +328,27 @@ class _IncomeRow extends StatelessWidget {
               borderRadius: BorderRadius.all(Radius.circular(2)),
               side: BorderSide(color: AppColors.cardBorder),
             ),
-            title: const Text(
-              'DELETE INCOME ENTRY?',
-              style: TextStyle(
-                fontFamily: 'Rajdhani',
-                fontWeight: FontWeight.w700,
-                fontSize: 18,
-                letterSpacing: 1,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            content: const Text(
-              'This cannot be undone.',
-              style: TextStyle(
-                fontFamily: 'IBMPlexMono',
-                fontSize: 12,
-                color: AppColors.textSecondary,
-              ),
-            ),
+            title: const Text('DELETE INCOME ENTRY?',
+                style: TextStyle(
+                    fontFamily: 'Rajdhani',
+                    fontWeight: FontWeight.w700,
+                    fontSize: 18,
+                    letterSpacing: 1,
+                    color: AppColors.textPrimary)),
+            content: const Text('This cannot be undone.',
+                style: TextStyle(
+                    fontFamily: 'IBMPlexMono',
+                    fontSize: 12,
+                    color: AppColors.textSecondary)),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('CANCEL',
-                    style: TextStyle(color: AppColors.textSecondary)),
-              ),
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('CANCEL',
+                      style: TextStyle(color: AppColors.textSecondary))),
               TextButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('DELETE',
-                    style: TextStyle(color: AppColors.destructive)),
-              ),
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('DELETE',
+                      style: TextStyle(color: AppColors.destructive))),
             ],
           ),
         ) ??
@@ -423,48 +366,35 @@ class _IncomeRow extends StatelessWidget {
           children: [
             // Source badge
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: const Color(0xFF3DAA6E).withOpacity(0.12),
-                border: Border.all(
-                    color: const Color(0xFF3DAA6E).withOpacity(0.4)),
+                color: _kGreen.withOpacity(0.12),
+                border: Border.all(color: _kGreen.withOpacity(0.4)),
                 borderRadius: BorderRadius.circular(2),
               ),
-              child: Text(
-                entry.source,
-                style: const TextStyle(
-                  fontFamily: 'IBMPlexMono',
-                  fontSize: 10,
-                  letterSpacing: 1.5,
-                  color: Color(0xFF3DAA6E),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+              child: Text(entry.source,
+                  style: const TextStyle(
+                      fontFamily: 'IBMPlexMono',
+                      fontSize: 10,
+                      letterSpacing: 1.5,
+                      color: _kGreen,
+                      fontWeight: FontWeight.w500)),
             ),
             const SizedBox(width: 10),
-            // Time
             Expanded(
-              child: Text(
-                timeFmt.format(entry.loggedAt),
+              child: Text(timeFmt.format(entry.loggedAt),
+                  style: const TextStyle(
+                      fontFamily: 'IBMPlexMono',
+                      fontSize: 10,
+                      color: AppColors.textSecondary,
+                      letterSpacing: 0.5)),
+            ),
+            Text('Rs ${fmt.format(entry.amount)}',
                 style: const TextStyle(
-                  fontFamily: 'IBMPlexMono',
-                  fontSize: 10,
-                  color: AppColors.textSecondary,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ),
-            // Amount
-            Text(
-              'Rs ${fmt.format(entry.amount)}',
-              style: const TextStyle(
-                fontFamily: 'Rajdhani',
-                fontWeight: FontWeight.w700,
-                fontSize: 18,
-                color: Color(0xFF3DAA6E),
-              ),
-            ),
+                    fontFamily: 'Rajdhani',
+                    fontWeight: FontWeight.w700,
+                    fontSize: 18,
+                    color: _kGreen)),
           ],
         ),
       ),
@@ -472,13 +402,10 @@ class _IncomeRow extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Empty state
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Empty state ───────────────────────────────────────────────────────────────
 
 class _EmptyState extends StatelessWidget {
   const _EmptyState();
-
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -488,37 +415,28 @@ class _EmptyState extends StatelessWidget {
           Icon(Icons.account_balance_wallet_outlined,
               size: 48, color: AppColors.textSecondary.withOpacity(0.4)),
           const SizedBox(height: 16),
-          const Text(
-            'NO INCOME LOGGED.',
-            style: TextStyle(
-              fontFamily: 'IBMPlexMono',
-              fontSize: 12,
-              letterSpacing: 2,
-              color: AppColors.textSecondary,
-            ),
-          ),
+          const Text('NO INCOME LOGGED.',
+              style: TextStyle(
+                  fontFamily: 'IBMPlexMono',
+                  fontSize: 12,
+                  letterSpacing: 2,
+                  color: AppColors.textSecondary)),
           const SizedBox(height: 6),
-          const Text(
-            'Tap + to add your first entry.',
-            style: TextStyle(
-              fontFamily: 'IBMPlexMono',
-              fontSize: 11,
-              color: AppColors.textSecondary,
-            ),
-          ),
+          const Text('Tap + to add your first entry.',
+              style: TextStyle(
+                  fontFamily: 'IBMPlexMono',
+                  fontSize: 11,
+                  color: AppColors.textSecondary)),
         ],
       ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Add income bottom sheet
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Add income bottom sheet ───────────────────────────────────────────────────
 
 class _AddIncomeSheet extends ConsumerStatefulWidget {
   const _AddIncomeSheet();
-
   @override
   ConsumerState<_AddIncomeSheet> createState() => _AddIncomeSheetState();
 }
@@ -530,14 +448,14 @@ class _AddIncomeSheetState extends ConsumerState<_AddIncomeSheet> {
   final _uuid = const Uuid();
 
   DateTime _loggedAt = DateTime.now();
+  String? _selectedFundUuid;
   bool _saving = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _amountFocus.requestFocus();
-    });
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _amountFocus.requestFocus());
   }
 
   @override
@@ -551,20 +469,19 @@ class _AddIncomeSheetState extends ConsumerState<_AddIncomeSheet> {
   Future<void> _save() async {
     final amountStr = _amountCtrl.text.trim();
     final source = _sourceCtrl.text.trim();
-    if (amountStr.isEmpty || source.isEmpty) return;
+    if (amountStr.isEmpty || source.isEmpty || _selectedFundUuid == null) return;
     final amount = double.tryParse(amountStr);
     if (amount == null || amount <= 0) return;
 
     setState(() => _saving = true);
-
     final entry = IncomeEntry()
       ..uuid = _uuid.v4()
       ..amount = amount
       ..source = source
+      ..fundUuid = _selectedFundUuid
       ..loggedAt = _loggedAt;
 
     await ref.read(incomeRepositoryProvider).saveEntry(entry);
-
     if (mounted) Navigator.of(context).pop();
   }
 
@@ -585,7 +502,6 @@ class _AddIncomeSheetState extends ConsumerState<_AddIncomeSheet> {
       ),
     );
     if (pickedDate == null || !mounted) return;
-
     final pickedTime = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.fromDateTime(_loggedAt),
@@ -599,12 +515,9 @@ class _AddIncomeSheetState extends ConsumerState<_AddIncomeSheet> {
         child: child!,
       ),
     );
-
     setState(() {
       _loggedAt = DateTime(
-        pickedDate.year,
-        pickedDate.month,
-        pickedDate.day,
+        pickedDate.year, pickedDate.month, pickedDate.day,
         pickedTime?.hour ?? _loggedAt.hour,
         pickedTime?.minute ?? _loggedAt.minute,
       );
@@ -615,6 +528,10 @@ class _AddIncomeSheetState extends ConsumerState<_AddIncomeSheet> {
   Widget build(BuildContext context) {
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final dateFmt = DateFormat('dd MMM yyyy, HH:mm');
+    final accounts = ref.watch(allFundAccountsProvider).value ?? [];
+    final canSave = _amountCtrl.text.trim().isNotEmpty &&
+        _sourceCtrl.text.trim().isNotEmpty &&
+        _selectedFundUuid != null;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(0, 0, 0, keyboardHeight),
@@ -622,27 +539,22 @@ class _AddIncomeSheetState extends ConsumerState<_AddIncomeSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Handle bar
           Center(
             child: Container(
               margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 36,
-              height: 3,
+              width: 36, height: 3,
               decoration: BoxDecoration(
-                color: AppColors.cardBorder,
-                borderRadius: BorderRadius.circular(2),
-              ),
+                  color: AppColors.cardBorder,
+                  borderRadius: BorderRadius.circular(2)),
             ),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Text(
-              'ADD INCOME',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontSize: 18,
-                    letterSpacing: 2,
-                  ),
-            ),
+            child: Text('ADD INCOME',
+                style: Theme.of(context)
+                    .textTheme
+                    .headlineMedium
+                    ?.copyWith(fontSize: 18, letterSpacing: 2)),
           ),
           const Divider(),
           SingleChildScrollView(
@@ -661,95 +573,149 @@ class _AddIncomeSheetState extends ConsumerState<_AddIncomeSheet> {
                   inputFormatters: [
                     FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
                   ],
+                  onChanged: (_) => setState(() {}),
                   style: const TextStyle(
-                    fontFamily: 'Rajdhani',
-                    fontWeight: FontWeight.w700,
-                    fontSize: 38,
-                    color: Color(0xFF3DAA6E),
-                  ),
-                  decoration: const InputDecoration(
-                    hintText: '0',
-                    hintStyle: TextStyle(
                       fontFamily: 'Rajdhani',
                       fontWeight: FontWeight.w700,
                       fontSize: 38,
-                      color: AppColors.textSecondary,
-                    ),
+                      color: _kGreen),
+                  decoration: const InputDecoration(
+                    hintText: '0',
+                    hintStyle: TextStyle(
+                        fontFamily: 'Rajdhani',
+                        fontWeight: FontWeight.w700,
+                        fontSize: 38,
+                        color: AppColors.textSecondary),
                     prefixText: 'RS  ',
                     prefixStyle: TextStyle(
-                      fontFamily: 'Rajdhani',
-                      fontWeight: FontWeight.w600,
-                      fontSize: 24,
-                      color: AppColors.textSecondary,
-                    ),
+                        fontFamily: 'Rajdhani',
+                        fontWeight: FontWeight.w600,
+                        fontSize: 24,
+                        color: AppColors.textSecondary),
                   ),
                 ),
                 const SizedBox(height: 20),
 
-                // Source — quick chips + text field
+                // Source chips + field
                 const _SheetLabel('SOURCE'),
                 const SizedBox(height: 10),
-                // Default source chips
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   children: _kDefaultSources.map((src) {
-                    final isSelected = _sourceCtrl.text == src;
+                    final isSel = _sourceCtrl.text == src;
                     return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _sourceCtrl.text = src;
-                        });
-                      },
+                      onTap: () => setState(() => _sourceCtrl.text = src),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 150),
                         padding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 8),
                         decoration: BoxDecoration(
-                          color: isSelected
-                              ? const Color(0xFF3DAA6E).withOpacity(0.15)
+                          color: isSel
+                              ? _kGreen.withOpacity(0.15)
                               : AppColors.backgroundElevated,
                           border: Border.all(
-                            color: isSelected
-                                ? const Color(0xFF3DAA6E)
-                                : AppColors.cardBorder,
-                            width: isSelected ? 1.5 : 1,
-                          ),
+                              color: isSel ? _kGreen : AppColors.cardBorder,
+                              width: isSel ? 1.5 : 1),
                           borderRadius: BorderRadius.circular(2),
                         ),
-                        child: Text(
-                          src,
-                          style: TextStyle(
-                            fontFamily: 'IBMPlexMono',
-                            fontSize: 12,
-                            letterSpacing: 2,
-                            fontWeight: isSelected
-                                ? FontWeight.w500
-                                : FontWeight.w400,
-                            color: isSelected
-                                ? const Color(0xFF3DAA6E)
-                                : AppColors.textSecondary,
-                          ),
-                        ),
+                        child: Text(src,
+                            style: TextStyle(
+                                fontFamily: 'IBMPlexMono',
+                                fontSize: 12,
+                                letterSpacing: 2,
+                                fontWeight: isSel
+                                    ? FontWeight.w500
+                                    : FontWeight.w400,
+                                color: isSel
+                                    ? _kGreen
+                                    : AppColors.textSecondary)),
                       ),
                     );
                   }).toList(),
                 ),
                 const SizedBox(height: 10),
-                // Custom source text field
                 TextField(
                   controller: _sourceCtrl,
                   textCapitalization: TextCapitalization.characters,
                   onChanged: (_) => setState(() {}),
                   style: const TextStyle(
-                    fontFamily: 'IBMPlexMono',
-                    fontSize: 14,
-                    color: AppColors.textPrimary,
-                  ),
+                      fontFamily: 'IBMPlexMono',
+                      fontSize: 14,
+                      color: AppColors.textPrimary),
                   decoration: const InputDecoration(
                     hintText: 'or type a custom source...',
                   ),
                 ),
+                const SizedBox(height: 20),
+
+                // Fund account picker
+                const _SheetLabel('ADD TO FUND'),
+                const SizedBox(height: 10),
+                if (accounts.isEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.backgroundElevated,
+                      border: Border.all(
+                          color: AppColors.destructive.withOpacity(0.4)),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                    child: const Text(
+                      'No fund accounts yet. Go to FUNDS tab to create one first.',
+                      style: TextStyle(
+                          fontFamily: 'IBMPlexMono',
+                          fontSize: 11,
+                          color: AppColors.destructive),
+                    ),
+                  )
+                else
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: accounts.map((acc) {
+                      final isSel = _selectedFundUuid == acc.uuid;
+                      return GestureDetector(
+                        onTap: () =>
+                            setState(() => _selectedFundUuid = acc.uuid),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isSel
+                                ? const Color(0xFF4A90D9).withOpacity(0.15)
+                                : AppColors.backgroundElevated,
+                            border: Border.all(
+                                color: isSel
+                                    ? const Color(0xFF4A90D9)
+                                    : AppColors.cardBorder,
+                                width: isSel ? 1.5 : 1),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.savings_outlined,
+                                  size: 12,
+                                  color: isSel
+                                      ? const Color(0xFF4A90D9)
+                                      : AppColors.textSecondary),
+                              const SizedBox(width: 6),
+                              Text(acc.name,
+                                  style: TextStyle(
+                                      fontFamily: 'IBMPlexMono',
+                                      fontSize: 12,
+                                      letterSpacing: 1,
+                                      color: isSel
+                                          ? const Color(0xFF4A90D9)
+                                          : AppColors.textSecondary)),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
                 const SizedBox(height: 20),
 
                 // Date & time
@@ -770,45 +736,34 @@ class _AddIncomeSheetState extends ConsumerState<_AddIncomeSheet> {
                         const Icon(Icons.access_time_outlined,
                             size: 14, color: AppColors.textSecondary),
                         const SizedBox(width: 10),
-                        Text(
-                          dateFmt.format(_loggedAt),
-                          style: const TextStyle(
-                            fontFamily: 'IBMPlexMono',
-                            fontSize: 12,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
+                        Text(dateFmt.format(_loggedAt),
+                            style: const TextStyle(
+                                fontFamily: 'IBMPlexMono',
+                                fontSize: 12,
+                                color: AppColors.textPrimary)),
                         const Spacer(),
-                        const Text(
-                          'CHANGE',
-                          style: TextStyle(
-                            fontFamily: 'IBMPlexMono',
-                            fontSize: 9,
-                            letterSpacing: 1.5,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
+                        const Text('CHANGE',
+                            style: TextStyle(
+                                fontFamily: 'IBMPlexMono',
+                                fontSize: 9,
+                                letterSpacing: 1.5,
+                                color: AppColors.textSecondary)),
                       ],
                     ),
                   ),
                 ),
                 const SizedBox(height: 24),
 
-                // Confirm button
                 ElevatedButton(
-                  onPressed: _saving ? null : _save,
+                  onPressed: (_saving || !canSave) ? null : _save,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3DAA6E),
-                  ),
+                      backgroundColor: _kGreen),
                   child: _saving
                       ? const SizedBox(
-                          width: 20,
-                          height: 20,
+                          width: 20, height: 20,
                           child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: AppColors.backgroundPrimary,
-                          ),
-                        )
+                              strokeWidth: 2,
+                              color: AppColors.backgroundPrimary))
                       : const Text('CONFIRM'),
                 ),
                 const SizedBox(height: 8),
@@ -824,17 +779,13 @@ class _AddIncomeSheetState extends ConsumerState<_AddIncomeSheet> {
 class _SheetLabel extends StatelessWidget {
   const _SheetLabel(this.text);
   final String text;
-
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontFamily: 'IBMPlexMono',
-        fontSize: 10,
-        letterSpacing: 2,
-        color: AppColors.textSecondary,
-      ),
-    );
+    return Text(text,
+        style: const TextStyle(
+            fontFamily: 'IBMPlexMono',
+            fontSize: 10,
+            letterSpacing: 2,
+            color: AppColors.textSecondary));
   }
 }

@@ -22,18 +22,23 @@ const IncomeEntrySchema = CollectionSchema(
       name: r'amount',
       type: IsarType.double,
     ),
-    r'loggedAt': PropertySchema(
+    r'fundUuid': PropertySchema(
       id: 1,
+      name: r'fundUuid',
+      type: IsarType.string,
+    ),
+    r'loggedAt': PropertySchema(
+      id: 2,
       name: r'loggedAt',
       type: IsarType.dateTime,
     ),
     r'source': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'source',
       type: IsarType.string,
     ),
     r'uuid': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'uuid',
       type: IsarType.string,
     )
@@ -52,6 +57,19 @@ const IncomeEntrySchema = CollectionSchema(
       properties: [
         IndexPropertySchema(
           name: r'uuid',
+          type: IndexType.hash,
+          caseSensitive: true,
+        )
+      ],
+    ),
+    r'fundUuid': IndexSchema(
+      id: -1574350723587498881,
+      name: r'fundUuid',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'fundUuid',
           type: IndexType.hash,
           caseSensitive: true,
         )
@@ -85,6 +103,12 @@ int _incomeEntryEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  {
+    final value = object.fundUuid;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.source.length * 3;
   bytesCount += 3 + object.uuid.length * 3;
   return bytesCount;
@@ -97,9 +121,10 @@ void _incomeEntrySerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeDouble(offsets[0], object.amount);
-  writer.writeDateTime(offsets[1], object.loggedAt);
-  writer.writeString(offsets[2], object.source);
-  writer.writeString(offsets[3], object.uuid);
+  writer.writeString(offsets[1], object.fundUuid);
+  writer.writeDateTime(offsets[2], object.loggedAt);
+  writer.writeString(offsets[3], object.source);
+  writer.writeString(offsets[4], object.uuid);
 }
 
 IncomeEntry _incomeEntryDeserialize(
@@ -110,10 +135,11 @@ IncomeEntry _incomeEntryDeserialize(
 ) {
   final object = IncomeEntry();
   object.amount = reader.readDouble(offsets[0]);
+  object.fundUuid = reader.readStringOrNull(offsets[1]);
   object.id = id;
-  object.loggedAt = reader.readDateTime(offsets[1]);
-  object.source = reader.readString(offsets[2]);
-  object.uuid = reader.readString(offsets[3]);
+  object.loggedAt = reader.readDateTime(offsets[2]);
+  object.source = reader.readString(offsets[3]);
+  object.uuid = reader.readString(offsets[4]);
   return object;
 }
 
@@ -127,10 +153,12 @@ P _incomeEntryDeserializeProp<P>(
     case 0:
       return (reader.readDouble(offset)) as P;
     case 1:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 2:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 3:
+      return (reader.readString(offset)) as P;
+    case 4:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -335,6 +363,72 @@ extension IncomeEntryQueryWhere
     });
   }
 
+  QueryBuilder<IncomeEntry, IncomeEntry, QAfterWhereClause> fundUuidIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'fundUuid',
+        value: [null],
+      ));
+    });
+  }
+
+  QueryBuilder<IncomeEntry, IncomeEntry, QAfterWhereClause>
+      fundUuidIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'fundUuid',
+        lower: [null],
+        includeLower: false,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<IncomeEntry, IncomeEntry, QAfterWhereClause> fundUuidEqualTo(
+      String? fundUuid) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'fundUuid',
+        value: [fundUuid],
+      ));
+    });
+  }
+
+  QueryBuilder<IncomeEntry, IncomeEntry, QAfterWhereClause> fundUuidNotEqualTo(
+      String? fundUuid) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'fundUuid',
+              lower: [],
+              upper: [fundUuid],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'fundUuid',
+              lower: [fundUuid],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'fundUuid',
+              lower: [fundUuid],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'fundUuid',
+              lower: [],
+              upper: [fundUuid],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
   QueryBuilder<IncomeEntry, IncomeEntry, QAfterWhereClause> loggedAtEqualTo(
       DateTime loggedAt) {
     return QueryBuilder.apply(this, (query) {
@@ -487,6 +581,159 @@ extension IncomeEntryQueryFilter
         upper: upper,
         includeUpper: includeUpper,
         epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<IncomeEntry, IncomeEntry, QAfterFilterCondition>
+      fundUuidIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'fundUuid',
+      ));
+    });
+  }
+
+  QueryBuilder<IncomeEntry, IncomeEntry, QAfterFilterCondition>
+      fundUuidIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'fundUuid',
+      ));
+    });
+  }
+
+  QueryBuilder<IncomeEntry, IncomeEntry, QAfterFilterCondition> fundUuidEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'fundUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IncomeEntry, IncomeEntry, QAfterFilterCondition>
+      fundUuidGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'fundUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IncomeEntry, IncomeEntry, QAfterFilterCondition>
+      fundUuidLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'fundUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IncomeEntry, IncomeEntry, QAfterFilterCondition> fundUuidBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'fundUuid',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IncomeEntry, IncomeEntry, QAfterFilterCondition>
+      fundUuidStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'fundUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IncomeEntry, IncomeEntry, QAfterFilterCondition>
+      fundUuidEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'fundUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IncomeEntry, IncomeEntry, QAfterFilterCondition>
+      fundUuidContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'fundUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IncomeEntry, IncomeEntry, QAfterFilterCondition> fundUuidMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'fundUuid',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IncomeEntry, IncomeEntry, QAfterFilterCondition>
+      fundUuidIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'fundUuid',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IncomeEntry, IncomeEntry, QAfterFilterCondition>
+      fundUuidIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'fundUuid',
+        value: '',
       ));
     });
   }
@@ -885,6 +1132,18 @@ extension IncomeEntryQuerySortBy
     });
   }
 
+  QueryBuilder<IncomeEntry, IncomeEntry, QAfterSortBy> sortByFundUuid() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fundUuid', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IncomeEntry, IncomeEntry, QAfterSortBy> sortByFundUuidDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fundUuid', Sort.desc);
+    });
+  }
+
   QueryBuilder<IncomeEntry, IncomeEntry, QAfterSortBy> sortByLoggedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'loggedAt', Sort.asc);
@@ -933,6 +1192,18 @@ extension IncomeEntryQuerySortThenBy
   QueryBuilder<IncomeEntry, IncomeEntry, QAfterSortBy> thenByAmountDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'amount', Sort.desc);
+    });
+  }
+
+  QueryBuilder<IncomeEntry, IncomeEntry, QAfterSortBy> thenByFundUuid() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fundUuid', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IncomeEntry, IncomeEntry, QAfterSortBy> thenByFundUuidDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fundUuid', Sort.desc);
     });
   }
 
@@ -993,6 +1264,13 @@ extension IncomeEntryQueryWhereDistinct
     });
   }
 
+  QueryBuilder<IncomeEntry, IncomeEntry, QDistinct> distinctByFundUuid(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'fundUuid', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<IncomeEntry, IncomeEntry, QDistinct> distinctByLoggedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'loggedAt');
@@ -1025,6 +1303,12 @@ extension IncomeEntryQueryProperty
   QueryBuilder<IncomeEntry, double, QQueryOperations> amountProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'amount');
+    });
+  }
+
+  QueryBuilder<IncomeEntry, String?, QQueryOperations> fundUuidProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'fundUuid');
     });
   }
 

@@ -13,5 +13,8 @@ class IncomeEntry {
   late String source;
 
   @Index()
+  String? fundUuid;
+
+  @Index()
   late DateTime loggedAt;
 }

@@ -13,5 +13,8 @@ class ExpenseEntry {
   late String purpose;
 
   @Index()
+  String? fundUuid;
+
+  @Index()
   late DateTime loggedAt;
 }

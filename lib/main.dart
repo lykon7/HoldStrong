@@ -10,6 +10,7 @@ import 'data/models/resist_entry.dart';
 import 'data/models/craving_label.dart';
 import 'data/models/expense_entry.dart';
 import 'data/models/income_entry.dart';
+import 'data/models/fund_account.dart';
 import 'domain/providers/goal_providers.dart';
 
 void main() async {
@@ -17,7 +18,7 @@ void main() async {
 
   final dir = await getApplicationDocumentsDirectory();
   final isar = await Isar.open(
-    [GoalSchema, ResistEntrySchema, CravingLabelSchema, ExpenseEntrySchema, IncomeEntrySchema],
+    [GoalSchema, ResistEntrySchema, CravingLabelSchema, ExpenseEntrySchema, IncomeEntrySchema, FundAccountSchema],
     directory: dir.path,
     name: AppConstants.kIsarDbName,
   );

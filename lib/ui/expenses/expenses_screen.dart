@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import '../../core/theme.dart';
 import '../../data/models/expense_entry.dart';
 import '../../domain/providers/expense_providers.dart';
+import '../../domain/providers/fund_providers.dart';
 
 class ExpensesScreen extends ConsumerWidget {
   const ExpensesScreen({super.key});
@@ -524,6 +525,7 @@ class _AddExpenseSheetState extends ConsumerState<_AddExpenseSheet> {
   final _uuid = const Uuid();
 
   DateTime _loggedAt = DateTime.now();
+  String? _selectedFundUuid;
   bool _saving = false;
 
   @override
@@ -545,7 +547,7 @@ class _AddExpenseSheetState extends ConsumerState<_AddExpenseSheet> {
   Future<void> _save() async {
     final amountStr = _amountCtrl.text.trim();
     final purpose = _purposeCtrl.text.trim();
-    if (amountStr.isEmpty || purpose.isEmpty) return;
+    if (amountStr.isEmpty || purpose.isEmpty || _selectedFundUuid == null) return;
     final amount = double.tryParse(amountStr);
     if (amount == null || amount <= 0) return;
 
@@ -555,6 +557,7 @@ class _AddExpenseSheetState extends ConsumerState<_AddExpenseSheet> {
       ..uuid = _uuid.v4()
       ..amount = amount
       ..purpose = purpose
+      ..fundUuid = _selectedFundUuid
       ..loggedAt = _loggedAt;
 
     await ref.read(expenseRepositoryProvider).saveEntry(entry);
@@ -609,6 +612,10 @@ class _AddExpenseSheetState extends ConsumerState<_AddExpenseSheet> {
   Widget build(BuildContext context) {
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final dateFmt = DateFormat('dd MMM yyyy, HH:mm');
+    final accounts = ref.watch(allFundAccountsProvider).value ?? [];
+    final canSave = _amountCtrl.text.trim().isNotEmpty &&
+        _purposeCtrl.text.trim().isNotEmpty &&
+        _selectedFundUuid != null;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(0, 0, 0, keyboardHeight),
@@ -686,6 +693,7 @@ class _AddExpenseSheetState extends ConsumerState<_AddExpenseSheet> {
                 TextField(
                   controller: _purposeCtrl,
                   textCapitalization: TextCapitalization.sentences,
+                  onChanged: (_) => setState(() {}),
                   style: const TextStyle(
                     fontFamily: 'IBMPlexMono',
                     fontSize: 14,
@@ -697,7 +705,74 @@ class _AddExpenseSheetState extends ConsumerState<_AddExpenseSheet> {
                 ),
                 const SizedBox(height: 20),
 
-                // Date & time
+                // Fund account picker
+                const _SheetLabel('PAY FROM FUND'),
+                const SizedBox(height: 10),
+                if (accounts.isEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.backgroundElevated,
+                      border: Border.all(
+                          color: AppColors.destructive.withOpacity(0.4)),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                    child: const Text(
+                      'No fund accounts yet. Go to FUNDS tab to create one first.',
+                      style: TextStyle(
+                          fontFamily: 'IBMPlexMono',
+                          fontSize: 11,
+                          color: AppColors.destructive),
+                    ),
+                  )
+                else
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: accounts.map((acc) {
+                      final isSel = _selectedFundUuid == acc.uuid;
+                      return GestureDetector(
+                        onTap: () =>
+                            setState(() => _selectedFundUuid = acc.uuid),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isSel
+                                ? const Color(0xFF4A90D9).withOpacity(0.15)
+                                : AppColors.backgroundElevated,
+                            border: Border.all(
+                                color: isSel
+                                    ? const Color(0xFF4A90D9)
+                                    : AppColors.cardBorder,
+                                width: isSel ? 1.5 : 1),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.savings_outlined,
+                                  size: 12,
+                                  color: isSel
+                                      ? const Color(0xFF4A90D9)
+                                      : AppColors.textSecondary),
+                              const SizedBox(width: 6),
+                              Text(acc.name,
+                                  style: TextStyle(
+                                      fontFamily: 'IBMPlexMono',
+                                      fontSize: 12,
+                                      letterSpacing: 1,
+                                      color: isSel
+                                          ? const Color(0xFF4A90D9)
+                                          : AppColors.textSecondary)),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                const SizedBox(height: 20),
                 const _SheetLabel('DATE & TIME'),
                 const SizedBox(height: 8),
                 GestureDetector(
@@ -741,7 +816,7 @@ class _AddExpenseSheetState extends ConsumerState<_AddExpenseSheet> {
 
                 // Confirm button
                 ElevatedButton(
-                  onPressed: _saving ? null : _save,
+                  onPressed: (_saving || !canSave) ? null : _save,
                   child: _saving
                       ? const SizedBox(
                           width: 20,
