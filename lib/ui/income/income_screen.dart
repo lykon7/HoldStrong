@@ -97,6 +97,7 @@ class IncomeScreen extends ConsumerWidget {
                         onDelete: () => ref
                             .read(incomeRepositoryProvider)
                             .deleteEntry(entry.uuid),
+                        onEdit: () => _showEditSheet(context, ref, entry),
                       ),
                     );
                   },
@@ -130,6 +131,21 @@ class IncomeScreen extends ConsumerWidget {
       builder: (_) => ProviderScope(
         parent: ProviderScope.containerOf(context),
         child: const _AddIncomeSheet(),
+      ),
+    );
+  }
+
+  void _showEditSheet(BuildContext context, WidgetRef ref, IncomeEntry entry) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.backgroundSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(4)),
+      ),
+      builder: (_) => ProviderScope(
+        parent: ProviderScope.containerOf(context),
+        child: _EditIncomeSheet(entry: entry),
       ),
     );
   }
@@ -296,9 +312,14 @@ class _DayHeaderTile extends StatelessWidget {
 // ── Income row ────────────────────────────────────────────────────────────────
 
 class _IncomeRow extends StatelessWidget {
-  const _IncomeRow({required this.entry, required this.onDelete});
+  const _IncomeRow({
+    required this.entry,
+    required this.onDelete,
+    required this.onEdit,
+  });
   final IncomeEntry entry;
   final VoidCallback onDelete;
+  final VoidCallback onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -307,8 +328,21 @@ class _IncomeRow extends StatelessWidget {
 
     return Dismissible(
       key: ValueKey(entry.uuid),
-      direction: DismissDirection.endToStart,
+      direction: DismissDirection.horizontal,
+      // Swipe right = edit
       background: Container(
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.only(left: 20),
+        decoration: BoxDecoration(
+          color: AppColors.accentBlue.withOpacity(0.15),
+          border: Border.all(color: AppColors.accentBlue.withOpacity(0.4)),
+          borderRadius: BorderRadius.circular(2),
+        ),
+        child: const Icon(Icons.edit_outlined,
+            color: AppColors.accentBlue, size: 20),
+      ),
+      // Swipe left = delete
+      secondaryBackground: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
         decoration: BoxDecoration(
@@ -319,7 +353,11 @@ class _IncomeRow extends StatelessWidget {
         child: const Icon(Icons.delete_outline,
             color: AppColors.destructive, size: 20),
       ),
-      confirmDismiss: (_) async {
+      confirmDismiss: (direction) async {
+        if (direction == DismissDirection.startToEnd) {
+          onEdit();
+          return false;
+        }
         return await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
@@ -351,8 +389,7 @@ class _IncomeRow extends StatelessWidget {
                       style: TextStyle(color: AppColors.destructive))),
             ],
           ),
-        ) ??
-            false;
+        ) ?? false;
       },
       onDismissed: (_) => onDelete(),
       child: Container(
@@ -790,5 +827,318 @@ class _SheetLabel extends StatelessWidget {
             fontSize: 10,
             letterSpacing: 2,
             color: AppColors.textSecondary));
+  }
+}
+
+// ── Edit income bottom sheet ──────────────────────────────────────────────────
+
+class _EditIncomeSheet extends ConsumerStatefulWidget {
+  const _EditIncomeSheet({required this.entry});
+  final IncomeEntry entry;
+
+  @override
+  ConsumerState<_EditIncomeSheet> createState() => _EditIncomeSheetState();
+}
+
+class _EditIncomeSheetState extends ConsumerState<_EditIncomeSheet> {
+  late final TextEditingController _amountCtrl;
+  late final TextEditingController _sourceCtrl;
+  late DateTime _loggedAt;
+  late String? _selectedFundUuid;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _amountCtrl =
+        TextEditingController(text: widget.entry.amount.toString());
+    _sourceCtrl = TextEditingController(text: widget.entry.source);
+    _loggedAt = widget.entry.loggedAt;
+    _selectedFundUuid = widget.entry.fundUuid;
+  }
+
+  @override
+  void dispose() {
+    _amountCtrl.dispose();
+    _sourceCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final amountStr = _amountCtrl.text.trim();
+    final source = _sourceCtrl.text.trim();
+    if (amountStr.isEmpty || source.isEmpty || _selectedFundUuid == null)
+      return;
+    final amount = double.tryParse(amountStr);
+    if (amount == null || amount <= 0) return;
+
+    setState(() => _saving = true);
+    await ref.read(incomeRepositoryProvider).updateEntry(
+          uuid: widget.entry.uuid,
+          amount: amount,
+          source: source,
+          fundUuid: _selectedFundUuid,
+          loggedAt: _loggedAt,
+        );
+    if (mounted) Navigator.of(context).pop();
+  }
+
+  Future<void> _pickDateTime() async {
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: _loggedAt,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      builder: (ctx, child) => Theme(
+        data: Theme.of(ctx).copyWith(
+          colorScheme: const ColorScheme.dark(
+            primary: AppColors.accentGold,
+            surface: AppColors.backgroundElevated,
+          ),
+        ),
+        child: child!,
+      ),
+    );
+    if (pickedDate == null || !mounted) return;
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_loggedAt),
+      builder: (ctx, child) => Theme(
+        data: Theme.of(ctx).copyWith(
+          colorScheme: const ColorScheme.dark(
+            primary: AppColors.accentGold,
+            surface: AppColors.backgroundElevated,
+          ),
+        ),
+        child: child!,
+      ),
+    );
+    setState(() {
+      _loggedAt = DateTime(
+        pickedDate.year, pickedDate.month, pickedDate.day,
+        pickedTime?.hour ?? _loggedAt.hour,
+        pickedTime?.minute ?? _loggedAt.minute,
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final dateFmt = DateFormat('dd MMM yyyy, HH:mm');
+    final accounts = ref.watch(allFundAccountsProvider).value ?? [];
+    final canSave = _amountCtrl.text.trim().isNotEmpty &&
+        _sourceCtrl.text.trim().isNotEmpty &&
+        _selectedFundUuid != null;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(0, 0, 0, keyboardHeight),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(
+            child: Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              width: 36, height: 3,
+              decoration: BoxDecoration(
+                  color: AppColors.cardBorder,
+                  borderRadius: BorderRadius.circular(2)),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Text('EDIT INCOME',
+                style: Theme.of(context)
+                    .textTheme
+                    .headlineMedium
+                    ?.copyWith(fontSize: 18, letterSpacing: 2)),
+          ),
+          const Divider(),
+          SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const _SheetLabel('AMOUNT (LKR)'),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _amountCtrl,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
+                  ],
+                  onChanged: (_) => setState(() {}),
+                  style: const TextStyle(
+                      fontFamily: 'Rajdhani',
+                      fontWeight: FontWeight.w700,
+                      fontSize: 38,
+                      color: _kGreen),
+                  decoration: const InputDecoration(
+                    hintText: '0',
+                    hintStyle: TextStyle(
+                        fontFamily: 'Rajdhani',
+                        fontWeight: FontWeight.w700,
+                        fontSize: 38,
+                        color: AppColors.textSecondary),
+                    prefixText: 'RS  ',
+                    prefixStyle: TextStyle(
+                        fontFamily: 'Rajdhani',
+                        fontWeight: FontWeight.w600,
+                        fontSize: 24,
+                        color: AppColors.textSecondary),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const _SheetLabel('SOURCE'),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _kDefaultSources.map((src) {
+                    final isSel = _sourceCtrl.text == src;
+                    return GestureDetector(
+                      onTap: () => setState(() => _sourceCtrl.text = src),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isSel
+                              ? _kGreen.withOpacity(0.15)
+                              : AppColors.backgroundElevated,
+                          border: Border.all(
+                              color: isSel ? _kGreen : AppColors.cardBorder,
+                              width: isSel ? 1.5 : 1),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                        child: Text(src,
+                            style: TextStyle(
+                                fontFamily: 'IBMPlexMono',
+                                fontSize: 12,
+                                letterSpacing: 2,
+                                color: isSel
+                                    ? _kGreen
+                                    : AppColors.textSecondary)),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _sourceCtrl,
+                  textCapitalization: TextCapitalization.characters,
+                  onChanged: (_) => setState(() {}),
+                  style: const TextStyle(
+                      fontFamily: 'IBMPlexMono',
+                      fontSize: 14,
+                      color: AppColors.textPrimary),
+                  decoration: const InputDecoration(
+                    hintText: 'or type a custom source...',
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const _SheetLabel('ADD TO FUND'),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: accounts.map((acc) {
+                    final isSel = _selectedFundUuid == acc.uuid;
+                    return GestureDetector(
+                      onTap: () =>
+                          setState(() => _selectedFundUuid = acc.uuid),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isSel
+                              ? const Color(0xFF4A90D9).withOpacity(0.15)
+                              : AppColors.backgroundElevated,
+                          border: Border.all(
+                              color: isSel
+                                  ? const Color(0xFF4A90D9)
+                                  : AppColors.cardBorder,
+                              width: isSel ? 1.5 : 1),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.savings_outlined,
+                                size: 12,
+                                color: isSel
+                                    ? const Color(0xFF4A90D9)
+                                    : AppColors.textSecondary),
+                            const SizedBox(width: 6),
+                            Text(acc.name,
+                                style: TextStyle(
+                                    fontFamily: 'IBMPlexMono',
+                                    fontSize: 12,
+                                    letterSpacing: 1,
+                                    color: isSel
+                                        ? const Color(0xFF4A90D9)
+                                        : AppColors.textSecondary)),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 20),
+                const _SheetLabel('DATE & TIME'),
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: _pickDateTime,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: AppColors.backgroundSurface,
+                      border: Border.all(color: AppColors.accentBlue),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.access_time_outlined,
+                            size: 14, color: AppColors.textSecondary),
+                        const SizedBox(width: 10),
+                        Text(dateFmt.format(_loggedAt),
+                            style: const TextStyle(
+                                fontFamily: 'IBMPlexMono',
+                                fontSize: 12,
+                                color: AppColors.textPrimary)),
+                        const Spacer(),
+                        const Text('CHANGE',
+                            style: TextStyle(
+                                fontFamily: 'IBMPlexMono',
+                                fontSize: 9,
+                                letterSpacing: 1.5,
+                                color: AppColors.textSecondary)),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: (_saving || !canSave) ? null : _save,
+                  style: ElevatedButton.styleFrom(backgroundColor: _kGreen),
+                  child: _saving
+                      ? const SizedBox(
+                          width: 20, height: 20,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.backgroundPrimary))
+                      : const Text('SAVE CHANGES'),
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

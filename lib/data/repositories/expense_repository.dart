@@ -29,6 +29,27 @@ class ExpenseRepository {
     });
   }
 
+  Future<void> updateEntry({
+    required String uuid,
+    required double amount,
+    required String purpose,
+    required String? fundUuid,
+    required DateTime loggedAt,
+  }) async {
+    await _isar.writeTxn(() async {
+      final entry =
+          await _isar.expenseEntrys.filter().uuidEqualTo(uuid).findFirst();
+      if (entry != null) {
+        entry
+          ..amount = amount
+          ..purpose = purpose
+          ..fundUuid = fundUuid
+          ..loggedAt = loggedAt;
+        await _isar.expenseEntrys.put(entry);
+      }
+    });
+  }
+
   Future<double> getTotalForDateRange(DateTime from, DateTime to) async {
     final entries = await _isar.expenseEntrys
         .filter()

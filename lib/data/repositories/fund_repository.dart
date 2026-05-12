@@ -33,6 +33,23 @@ class FundRepository {
     });
   }
 
+  Future<void> updateAccount({
+    required String uuid,
+    required String name,
+    required double openingBalance,
+  }) async {
+    await _isar.writeTxn(() async {
+      final account =
+          await _isar.fundAccounts.filter().uuidEqualTo(uuid).findFirst();
+      if (account != null) {
+        account
+          ..name = name
+          ..openingBalance = openingBalance;
+        await _isar.fundAccounts.put(account);
+      }
+    });
+  }
+
   Future<void> deleteAllAccounts() async {
     await _isar.writeTxn(() async {
       await _isar.fundAccounts.clear();

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 
+import 'package:uuid/uuid.dart';
+
 import 'app.dart';
 import 'core/constants.dart';
 import 'data/models/goal.dart';
@@ -22,6 +24,18 @@ void main() async {
     directory: dir.path,
     name: AppConstants.kIsarDbName,
   );
+
+  if (isar.fundAccounts.countSync() == 0) {
+    isar.writeTxnSync(() {
+      isar.fundAccounts.putSync(
+        FundAccount()
+          ..uuid = const Uuid().v4()
+          ..name = 'Cash'
+          ..openingBalance = 0.0
+          ..createdAt = DateTime.now(),
+      );
+    });
+  }
 
   runApp(
     ProviderScope(

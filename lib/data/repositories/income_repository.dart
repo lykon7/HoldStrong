@@ -29,6 +29,27 @@ class IncomeRepository {
     });
   }
 
+  Future<void> updateEntry({
+    required String uuid,
+    required double amount,
+    required String source,
+    required String? fundUuid,
+    required DateTime loggedAt,
+  }) async {
+    await _isar.writeTxn(() async {
+      final entry =
+          await _isar.incomeEntrys.filter().uuidEqualTo(uuid).findFirst();
+      if (entry != null) {
+        entry
+          ..amount = amount
+          ..source = source
+          ..fundUuid = fundUuid
+          ..loggedAt = loggedAt;
+        await _isar.incomeEntrys.put(entry);
+      }
+    });
+  }
+
   Future<void> deleteAllEntries() async {
     await _isar.writeTxn(() async {
       await _isar.incomeEntrys.clear();
