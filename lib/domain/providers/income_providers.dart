@@ -12,8 +12,8 @@ final allIncomeProvider = StreamProvider<List<IncomeEntry>>((ref) {
 });
 
 /// Total for today: midnight → midnight
-final dailyIncomeTotalProvider = StreamProvider<double>((ref) {
-  return ref.watch(allIncomeProvider.stream).map((entries) {
+final dailyIncomeTotalProvider = Provider<AsyncValue<double>>((ref) {
+  return ref.watch(allIncomeProvider).whenData((entries) {
     final now = DateTime.now();
     final todayStart = DateTime(now.year, now.month, now.day);
     final todayEnd = todayStart.add(const Duration(days: 1));
@@ -25,8 +25,8 @@ final dailyIncomeTotalProvider = StreamProvider<double>((ref) {
 });
 
 /// Total for the current Mon–Sun week
-final weeklyIncomeTotalProvider = StreamProvider<double>((ref) {
-  return ref.watch(allIncomeProvider.stream).map((entries) {
+final weeklyIncomeTotalProvider = Provider<AsyncValue<double>>((ref) {
+  return ref.watch(allIncomeProvider).whenData((entries) {
     final now = DateTime.now();
     final todayStart = DateTime(now.year, now.month, now.day);
     final weekStart =
@@ -40,8 +40,8 @@ final weeklyIncomeTotalProvider = StreamProvider<double>((ref) {
 });
 
 /// Total for the current calendar month
-final monthlyIncomeTotalProvider = StreamProvider<double>((ref) {
-  return ref.watch(allIncomeProvider.stream).map((entries) {
+final monthlyIncomeTotalProvider = Provider<AsyncValue<double>>((ref) {
+  return ref.watch(allIncomeProvider).whenData((entries) {
     final now = DateTime.now();
     final monthStart = DateTime(now.year, now.month, 1);
     final monthEnd = DateTime(now.year, now.month + 1, 1);
