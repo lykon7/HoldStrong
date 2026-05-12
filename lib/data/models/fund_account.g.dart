@@ -27,8 +27,13 @@ const FundAccountSchema = CollectionSchema(
       name: r'name',
       type: IsarType.string,
     ),
-    r'uuid': PropertySchema(
+    r'openingBalance': PropertySchema(
       id: 2,
+      name: r'openingBalance',
+      type: IsarType.double,
+    ),
+    r'uuid': PropertySchema(
+      id: 3,
       name: r'uuid',
       type: IsarType.string,
     )
@@ -93,7 +98,8 @@ void _fundAccountSerialize(
 ) {
   writer.writeDateTime(offsets[0], object.createdAt);
   writer.writeString(offsets[1], object.name);
-  writer.writeString(offsets[2], object.uuid);
+  writer.writeDouble(offsets[2], object.openingBalance);
+  writer.writeString(offsets[3], object.uuid);
 }
 
 FundAccount _fundAccountDeserialize(
@@ -106,7 +112,8 @@ FundAccount _fundAccountDeserialize(
   object.createdAt = reader.readDateTime(offsets[0]);
   object.id = id;
   object.name = reader.readString(offsets[1]);
-  object.uuid = reader.readString(offsets[2]);
+  object.openingBalance = reader.readDouble(offsets[2]);
+  object.uuid = reader.readString(offsets[3]);
   return object;
 }
 
@@ -122,6 +129,8 @@ P _fundAccountDeserializeProp<P>(
     case 1:
       return (reader.readString(offset)) as P;
     case 2:
+      return (reader.readDouble(offset)) as P;
+    case 3:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -660,6 +669,72 @@ extension FundAccountQueryFilter
     });
   }
 
+  QueryBuilder<FundAccount, FundAccount, QAfterFilterCondition>
+      openingBalanceEqualTo(
+    double value, {
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'openingBalance',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<FundAccount, FundAccount, QAfterFilterCondition>
+      openingBalanceGreaterThan(
+    double value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'openingBalance',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<FundAccount, FundAccount, QAfterFilterCondition>
+      openingBalanceLessThan(
+    double value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'openingBalance',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<FundAccount, FundAccount, QAfterFilterCondition>
+      openingBalanceBetween(
+    double lower,
+    double upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'openingBalance',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
   QueryBuilder<FundAccount, FundAccount, QAfterFilterCondition> uuidEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -824,6 +899,19 @@ extension FundAccountQuerySortBy
     });
   }
 
+  QueryBuilder<FundAccount, FundAccount, QAfterSortBy> sortByOpeningBalance() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'openingBalance', Sort.asc);
+    });
+  }
+
+  QueryBuilder<FundAccount, FundAccount, QAfterSortBy>
+      sortByOpeningBalanceDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'openingBalance', Sort.desc);
+    });
+  }
+
   QueryBuilder<FundAccount, FundAccount, QAfterSortBy> sortByUuid() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'uuid', Sort.asc);
@@ -875,6 +963,19 @@ extension FundAccountQuerySortThenBy
     });
   }
 
+  QueryBuilder<FundAccount, FundAccount, QAfterSortBy> thenByOpeningBalance() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'openingBalance', Sort.asc);
+    });
+  }
+
+  QueryBuilder<FundAccount, FundAccount, QAfterSortBy>
+      thenByOpeningBalanceDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'openingBalance', Sort.desc);
+    });
+  }
+
   QueryBuilder<FundAccount, FundAccount, QAfterSortBy> thenByUuid() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'uuid', Sort.asc);
@@ -903,6 +1004,12 @@ extension FundAccountQueryWhereDistinct
     });
   }
 
+  QueryBuilder<FundAccount, FundAccount, QDistinct> distinctByOpeningBalance() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'openingBalance');
+    });
+  }
+
   QueryBuilder<FundAccount, FundAccount, QDistinct> distinctByUuid(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -928,6 +1035,12 @@ extension FundAccountQueryProperty
   QueryBuilder<FundAccount, String, QQueryOperations> nameProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'name');
+    });
+  }
+
+  QueryBuilder<FundAccount, double, QQueryOperations> openingBalanceProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'openingBalance');
     });
   }
 

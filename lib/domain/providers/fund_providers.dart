@@ -28,8 +28,9 @@ final fundBalancesProvider = Provider<Map<String, double>>((ref) {
     final debited = expenses
         .where((e) => e.fundUuid == acc.uuid)
         .fold<double>(0.0, (s, e) => s + e.amount);
-    balances[acc.uuid] = credited - debited;
+    balances[acc.uuid] = acc.openingBalance + credited - debited;
   }
   return balances;
 });
+
 

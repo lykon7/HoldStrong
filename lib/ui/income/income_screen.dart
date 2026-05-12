@@ -364,31 +364,33 @@ class _IncomeRow extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Source badge
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: _kGreen.withOpacity(0.12),
-                border: Border.all(color: _kGreen.withOpacity(0.4)),
-                borderRadius: BorderRadius.circular(2),
-              ),
-              child: Text(entry.source,
-                  style: const TextStyle(
-                      fontFamily: 'IBMPlexMono',
-                      fontSize: 10,
-                      letterSpacing: 1.5,
-                      color: _kGreen,
-                      fontWeight: FontWeight.w500)),
-            ),
-            const SizedBox(width: 10),
+            // Left: source text + time below (mirrors expense row)
             Expanded(
-              child: Text(timeFmt.format(entry.loggedAt),
-                  style: const TextStyle(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    entry.source,
+                    style: const TextStyle(
+                      fontFamily: 'IBMPlexMono',
+                      fontSize: 13,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    timeFmt.format(entry.loggedAt),
+                    style: const TextStyle(
                       fontFamily: 'IBMPlexMono',
                       fontSize: 10,
                       color: AppColors.textSecondary,
-                      letterSpacing: 0.5)),
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
             ),
+            // Right: amount in green
             Text('Rs ${fmt.format(entry.amount)}',
                 style: const TextStyle(
                     fontFamily: 'Rajdhani',
@@ -401,6 +403,7 @@ class _IncomeRow extends StatelessWidget {
     );
   }
 }
+
 
 // ── Empty state ───────────────────────────────────────────────────────────────
 

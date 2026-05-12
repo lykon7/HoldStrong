@@ -10,6 +10,7 @@ class FundAccount {
   late String uuid;
 
   late String name;
+  double openingBalance = 0.0;
 
   @Index()
   late DateTime createdAt;

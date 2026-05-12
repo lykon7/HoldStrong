@@ -286,6 +286,7 @@ class _AddFundSheet extends ConsumerStatefulWidget {
 
 class _AddFundSheetState extends ConsumerState<_AddFundSheet> {
   final _nameCtrl = TextEditingController();
+  final _openingBalanceCtrl = TextEditingController();
   final _nameFocus = FocusNode();
   final _uuid = const Uuid();
   bool _saving = false;
@@ -304,6 +305,7 @@ class _AddFundSheetState extends ConsumerState<_AddFundSheet> {
   @override
   void dispose() {
     _nameCtrl.dispose();
+    _openingBalanceCtrl.dispose();
     _nameFocus.dispose();
     super.dispose();
   }
@@ -311,11 +313,14 @@ class _AddFundSheetState extends ConsumerState<_AddFundSheet> {
   Future<void> _save() async {
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) return;
+    final openingBalance =
+        double.tryParse(_openingBalanceCtrl.text.trim()) ?? 0.0;
     setState(() => _saving = true);
 
     final account = FundAccount()
       ..uuid = _uuid.v4()
       ..name = name
+      ..openingBalance = openingBalance
       ..createdAt = DateTime.now();
 
     await ref.read(fundRepositoryProvider).saveAccount(account);
@@ -414,6 +419,40 @@ class _AddFundSheetState extends ConsumerState<_AddFundSheet> {
                   ),
                   decoration: const InputDecoration(
                     hintText: 'e.g. Cash, Bank, Savings...',
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Opening balance
+                const _SheetLabel('OPENING BALANCE (LKR)'),
+                const SizedBox(height: 4),
+                const Text(
+                  'This is your current balance before you start tracking. It will not appear in income logs.',
+                  style: TextStyle(
+                    fontFamily: 'IBMPlexMono',
+                    fontSize: 9,
+                    color: AppColors.textSecondary,
+                    height: 1.6,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _openingBalanceCtrl,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  style: const TextStyle(
+                    fontFamily: 'IBMPlexMono',
+                    fontSize: 14,
+                    color: AppColors.textPrimary,
+                  ),
+                  decoration: const InputDecoration(
+                    hintText: '0.00',
+                    prefixText: 'RS  ',
+                    prefixStyle: TextStyle(
+                      fontFamily: 'IBMPlexMono',
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 24),
