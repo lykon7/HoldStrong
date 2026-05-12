@@ -690,10 +690,10 @@ class _AddFundSheetState extends ConsumerState<_AddFundSheet> {
                 const SizedBox(height: 20),
 
                 // Opening balance
-                const _SheetLabel('OPENING BALANCE (LKR)'),
+                const _SheetLabel('CURRENT BALANCE (LKR)'),
                 const SizedBox(height: 4),
                 const Text(
-                  'This is your current balance before you start tracking. It will not appear in income logs.',
+                  'Set the initial current balance. Does not appear in income logs.',
                   style: TextStyle(
                     fontFamily: 'IBMPlexMono',
                     fontSize: 9,
@@ -789,10 +789,13 @@ class _EditFundSheetState extends ConsumerState<_EditFundSheet> {
   void initState() {
     super.initState();
     _nameCtrl = TextEditingController(text: widget.account.name);
+    
+    // Initialise text field with current balance, not raw opening balance
+    final currentBalance = ref.read(fundBalancesProvider)[widget.account.uuid] ?? widget.account.openingBalance;
     _openingBalanceCtrl = TextEditingController(
-        text: widget.account.openingBalance == 0
+        text: currentBalance == 0
             ? ''
-            : widget.account.openingBalance.toString());
+            : currentBalance.toString());
   }
 
   @override
@@ -805,14 +808,20 @@ class _EditFundSheetState extends ConsumerState<_EditFundSheet> {
   Future<void> _save() async {
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) return;
-    final openingBalance =
+    
+    final targetBalance =
         double.tryParse(_openingBalanceCtrl.text.trim()) ?? 0.0;
     setState(() => _saving = true);
+
+    // Calculate new underlying opening balance to achieve the target current balance
+    final currentBalance = ref.read(fundBalancesProvider)[widget.account.uuid] ?? widget.account.openingBalance;
+    final netTransactions = currentBalance - widget.account.openingBalance;
+    final newOpeningBalance = targetBalance - netTransactions;
 
     await ref.read(fundRepositoryProvider).updateAccount(
           uuid: widget.account.uuid,
           name: name,
-          openingBalance: openingBalance,
+          openingBalance: newOpeningBalance,
         );
     if (mounted) Navigator.of(context).pop();
   }
@@ -910,10 +919,10 @@ class _EditFundSheetState extends ConsumerState<_EditFundSheet> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                const _SheetLabel('OPENING BALANCE (LKR)'),
+                const _SheetLabel('CURRENT BALANCE (LKR)'),
                 const SizedBox(height: 4),
                 const Text(
-                  'Adjust the starting balance. Does not appear in income logs.',
+                  'Adjust the current total balance. This overrides past transactions to match your input.',
                   style: TextStyle(
                     fontFamily: 'IBMPlexMono',
                     fontSize: 9,
