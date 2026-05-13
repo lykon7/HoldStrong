@@ -10,8 +10,7 @@ import '../ui/history/history_screen.dart';
 import '../ui/goals/goals_screen.dart';
 import '../ui/goals/goal_form_screen.dart';
 import '../ui/settings/settings_screen.dart';
-import '../ui/expenses/expenses_screen.dart';
-import '../ui/income/income_screen.dart';
+import '../ui/transactions/transactions_screen.dart';
 import '../ui/funds/funds_screen.dart';
 
 final goRouterProvider = Provider<GoRouter>((ref) {
@@ -47,12 +46,16 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const GoalsScreen(),
           ),
           GoRoute(
+            path: '/transactions',
+            builder: (context, state) => const TransactionsScreen(),
+          ),
+          GoRoute(
             path: '/expenses',
-            builder: (context, state) => const ExpensesScreen(),
+            redirect: (context, state) => '/transactions',
           ),
           GoRoute(
             path: '/income',
-            builder: (context, state) => const IncomeScreen(),
+            redirect: (context, state) => '/transactions',
           ),
           GoRoute(
             path: '/funds',
@@ -130,7 +133,7 @@ class _MainShell extends ConsumerStatefulWidget {
 class _MainShellState extends ConsumerState<_MainShell> {
   int _selectedIndex = 0;
 
-  static const _tabs = ['/', '/history', '/goals', '/expenses', '/income', '/funds'];
+  static const _tabs = ['/', '/history', '/goals', '/transactions', '/funds'];
 
   @override
   Widget build(BuildContext context) {
@@ -146,8 +149,7 @@ class _MainShellState extends ConsumerState<_MainShell> {
           NavigationDestination(icon: Icon(Icons.home_outlined), label: 'HOME'),
           NavigationDestination(icon: Icon(Icons.history), label: 'HISTORY'),
           NavigationDestination(icon: Icon(Icons.flag_outlined), label: 'GOALS'),
-          NavigationDestination(icon: Icon(Icons.receipt_long_outlined), label: 'EXPENSES'),
-          NavigationDestination(icon: Icon(Icons.account_balance_wallet_outlined), label: 'INCOME'),
+          NavigationDestination(icon: Icon(Icons.swap_horiz), label: 'TRANSACTIONS'),
           NavigationDestination(icon: Icon(Icons.savings_outlined), label: 'FUNDS'),
         ],
       ),
