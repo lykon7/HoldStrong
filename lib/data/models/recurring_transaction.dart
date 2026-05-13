@@ -4,6 +4,17 @@ part 'recurring_transaction.g.dart';
 
 enum RecurringTransactionType { income, expense }
 
+extension RecurringTransactionTypeLabel on RecurringTransactionType {
+  String get label {
+    switch (this) {
+      case RecurringTransactionType.income:
+        return 'Income';
+      case RecurringTransactionType.expense:
+        return 'Expense';
+    }
+  }
+}
+
 enum RecurrenceFrequency { daily, weekly, monthly, yearly }
 
 extension RecurrenceFrequencyLabel on RecurrenceFrequency {

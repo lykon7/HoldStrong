@@ -10,9 +10,47 @@ class RecurringTransactionRepository {
   final Isar _isar;
   final _uuid = const Uuid();
 
+  Stream<List<RecurringTransaction>> watchAllRecurring() {
+    return _isar.recurringTransactions
+        .where()
+        .sortByStartAtDesc()
+        .watch(fireImmediately: true);
+  }
+
   Future<void> saveRecurring(RecurringTransaction recurring) async {
     await _isar.writeTxn(() async {
       await _isar.recurringTransactions.put(recurring);
+    });
+  }
+
+  Future<void> updateRecurring(RecurringTransaction recurring) async {
+    await _isar.writeTxn(() async {
+      await _isar.recurringTransactions.put(recurring);
+    });
+  }
+
+  Future<void> setActive(String uuid, bool isActive) async {
+    await _isar.writeTxn(() async {
+      final rule = await _isar.recurringTransactions
+          .filter()
+          .uuidEqualTo(uuid)
+          .findFirst();
+      if (rule != null) {
+        rule.isActive = isActive;
+        await _isar.recurringTransactions.put(rule);
+      }
+    });
+  }
+
+  Future<void> deleteRecurring(String uuid) async {
+    await _isar.writeTxn(() async {
+      final rule = await _isar.recurringTransactions
+          .filter()
+          .uuidEqualTo(uuid)
+          .findFirst();
+      if (rule != null) {
+        await _isar.recurringTransactions.delete(rule.id);
+      }
     });
   }
 

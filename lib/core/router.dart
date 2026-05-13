@@ -11,6 +11,7 @@ import '../ui/goals/goals_screen.dart';
 import '../ui/goals/goal_form_screen.dart';
 import '../ui/settings/settings_screen.dart';
 import '../ui/transactions/transactions_screen.dart';
+import '../ui/transactions/recurring_screen.dart';
 import '../ui/funds/funds_screen.dart';
 
 final goRouterProvider = Provider<GoRouter>((ref) {
@@ -48,6 +49,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/transactions',
             builder: (context, state) => const TransactionsScreen(),
+          ),
+          GoRoute(
+            path: '/recurring',
+            builder: (context, state) => const RecurringScreen(),
           ),
           GoRoute(
             path: '/expenses',

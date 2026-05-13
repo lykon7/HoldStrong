@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/theme.dart';
@@ -51,6 +52,11 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.repeat, size: 20),
+            tooltip: 'Recurring',
+            onPressed: () => context.push('/recurring'),
+          ),
           IconButton(
             icon: const Icon(Icons.add, size: 22),
             tooltip: 'Add Transaction',
