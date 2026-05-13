@@ -32,6 +32,8 @@ class TransactionsScreen extends ConsumerWidget {
       backgroundColor: AppColors.backgroundPrimary,
       appBar: AppBar(
         title: const Text('TRANSACTIONS'),
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         actions: [
           IconButton(
             icon: const Icon(Icons.add, size: 22),
@@ -73,16 +75,7 @@ class TransactionsScreen extends ConsumerWidget {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddPicker(context, ref),
-        backgroundColor: AppColors.accentGold,
-        foregroundColor: AppColors.backgroundPrimary,
-        elevation: 0,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(4)),
-        ),
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: null,
     );
   }
 
@@ -156,7 +149,7 @@ class TransactionsScreen extends ConsumerWidget {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       itemCount: listItems.length,
       itemBuilder: (context, index) {
         final item = listItems[index];
