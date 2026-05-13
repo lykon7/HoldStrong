@@ -552,6 +552,9 @@ class _DayHeaderTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fmt = NumberFormat('#,##0.00', 'en_US');
+    final net = header.incomeTotal - header.expenseTotal;
+    final netColor = net >= 0 ? _kIncomeGreen : _kExpenseRed;
+    final netPrefix = net >= 0 ? '+Rs ' : '-Rs ';
 
     return Padding(
       padding: const EdgeInsets.only(top: 16, bottom: 8),
@@ -595,6 +598,16 @@ class _DayHeaderTile extends StatelessWidget {
                   fontSize: 10,
                   letterSpacing: 1,
                   color: _kExpenseRed,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'NET ${netPrefix}${fmt.format(net.abs())}',
+                style: TextStyle(
+                  fontFamily: 'IBMPlexMono',
+                  fontSize: 9,
+                  letterSpacing: 1,
+                  color: netColor,
                 ),
               ),
             ],
