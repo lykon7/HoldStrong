@@ -6,19 +6,35 @@ import 'package:uuid/uuid.dart';
 import '../../core/theme.dart';
 import '../../data/models/expense_entry.dart';
 import '../../data/models/income_entry.dart';
+import '../../data/models/recurring_transaction.dart';
 import '../../domain/providers/expense_providers.dart';
 import '../../domain/providers/income_providers.dart';
 import '../../domain/providers/fund_providers.dart';
+import '../../domain/providers/recurring_transaction_providers.dart';
 
 const _kDefaultSources = ['DA', 'PM', 'UB'];
 const _kIncomeGreen = Color(0xFF3DAA6E);
 const _kExpenseRed = AppColors.destructive;
 
-class TransactionsScreen extends ConsumerWidget {
+class TransactionsScreen extends ConsumerStatefulWidget {
   const TransactionsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TransactionsScreen> createState() =>
+      _TransactionsScreenState();
+}
+
+class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() => ref
+        .read(recurringTransactionRepositoryProvider)
+        .materializeDueEntries());
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final allIncome = ref.watch(allIncomeProvider);
     final allExpenses = ref.watch(allExpensesProvider);
     final dailyIncome = ref.watch(dailyIncomeTotalProvider);
@@ -858,6 +874,8 @@ class _AddIncomeSheetState extends ConsumerState<_AddIncomeSheet> {
   DateTime _loggedAt = DateTime.now();
   String? _selectedFundUuid;
   bool _saving = false;
+  bool _isRecurring = false;
+  RecurrenceFrequency _frequency = RecurrenceFrequency.monthly;
 
   @override
   void initState() {
@@ -892,6 +910,21 @@ class _AddIncomeSheetState extends ConsumerState<_AddIncomeSheet> {
       ..loggedAt = _loggedAt;
 
     await ref.read(incomeRepositoryProvider).saveEntry(entry);
+    if (_isRecurring) {
+      final recurring = RecurringTransaction()
+        ..uuid = _uuid.v4()
+        ..type = RecurringTransactionType.income.index
+        ..amount = amount
+        ..title = source
+        ..fundUuid = _selectedFundUuid
+        ..startAt = _loggedAt
+        ..lastGeneratedAt = _loggedAt
+        ..frequency = _frequency.index
+        ..isActive = true;
+      await ref
+          .read(recurringTransactionRepositoryProvider)
+          .saveRecurring(recurring);
+    }
     if (mounted) Navigator.of(context).pop();
   }
 
@@ -1185,6 +1218,54 @@ class _AddIncomeSheetState extends ConsumerState<_AddIncomeSheet> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 16),
+                const _SheetLabel('RECURRING'),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Switch(
+                      value: _isRecurring,
+                      onChanged: (value) =>
+                          setState(() => _isRecurring = value),
+                      activeColor: _kIncomeGreen,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _isRecurring ? 'REPEATS' : 'ONE-TIME',
+                      style: const TextStyle(
+                        fontFamily: 'IBMPlexMono',
+                        fontSize: 11,
+                        letterSpacing: 1,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+                if (_isRecurring) ...[
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<RecurrenceFrequency>(
+                    value: _frequency,
+                    decoration: const InputDecoration(
+                      hintText: 'Frequency',
+                    ),
+                    icon: const Icon(Icons.expand_more),
+                    style: const TextStyle(
+                      fontFamily: 'IBMPlexMono',
+                      fontSize: 12,
+                      color: AppColors.textPrimary,
+                    ),
+                    items: RecurrenceFrequency.values.map((freq) {
+                      return DropdownMenuItem(
+                        value: freq,
+                        child: Text(freq.label),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() => _frequency = value);
+                    },
+                  ),
+                ],
                 const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: (_saving || !canSave) ? null : _save,
@@ -1570,6 +1651,8 @@ class _AddExpenseSheetState extends ConsumerState<_AddExpenseSheet> {
   DateTime _loggedAt = DateTime.now();
   String? _selectedFundUuid;
   bool _saving = false;
+  bool _isRecurring = false;
+  RecurrenceFrequency _frequency = RecurrenceFrequency.monthly;
 
   @override
   void initState() {
@@ -1606,6 +1689,22 @@ class _AddExpenseSheetState extends ConsumerState<_AddExpenseSheet> {
       ..loggedAt = _loggedAt;
 
     await ref.read(expenseRepositoryProvider).saveEntry(entry);
+
+    if (_isRecurring) {
+      final recurring = RecurringTransaction()
+        ..uuid = _uuid.v4()
+        ..type = RecurringTransactionType.expense.index
+        ..amount = amount
+        ..title = purpose
+        ..fundUuid = _selectedFundUuid
+        ..startAt = _loggedAt
+        ..lastGeneratedAt = _loggedAt
+        ..frequency = _frequency.index
+        ..isActive = true;
+      await ref
+          .read(recurringTransactionRepositoryProvider)
+          .saveRecurring(recurring);
+    }
 
     if (mounted) Navigator.of(context).pop();
   }
@@ -1863,6 +1962,54 @@ class _AddExpenseSheetState extends ConsumerState<_AddExpenseSheet> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 16),
+                const _SheetLabel('RECURRING'),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Switch(
+                      value: _isRecurring,
+                      onChanged: (value) =>
+                          setState(() => _isRecurring = value),
+                      activeColor: AppColors.accentGold,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _isRecurring ? 'REPEATS' : 'ONE-TIME',
+                      style: const TextStyle(
+                        fontFamily: 'IBMPlexMono',
+                        fontSize: 11,
+                        letterSpacing: 1,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+                if (_isRecurring) ...[
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<RecurrenceFrequency>(
+                    value: _frequency,
+                    decoration: const InputDecoration(
+                      hintText: 'Frequency',
+                    ),
+                    icon: const Icon(Icons.expand_more),
+                    style: const TextStyle(
+                      fontFamily: 'IBMPlexMono',
+                      fontSize: 12,
+                      color: AppColors.textPrimary,
+                    ),
+                    items: RecurrenceFrequency.values.map((freq) {
+                      return DropdownMenuItem(
+                        value: freq,
+                        child: Text(freq.label),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() => _frequency = value);
+                    },
+                  ),
+                ],
                 const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: (_saving || !canSave) ? null : _save,
