@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../domain/providers/goal_providers.dart';
 import '../../domain/providers/resist_providers.dart';
+import '../../domain/providers/income_providers.dart';
+import '../../domain/providers/expense_providers.dart';
 import 'widgets/goal_progress_card.dart';
 import 'widgets/held_button.dart';
+import 'widgets/net_week_graph.dart';
 import 'widgets/recent_feed.dart';
 import '../../core/theme.dart';
 
@@ -17,6 +20,8 @@ class HomeScreen extends ConsumerWidget {
     final recent = ref.watch(recentEntriesProvider);
     final streak = ref.watch(streakProvider);
     final totalSaved = ref.watch(totalSavedForActiveGoalProvider);
+    final incomes = ref.watch(allIncomeProvider);
+    final expenses = ref.watch(allExpensesProvider);
 
     return Scaffold(
       backgroundColor: AppColors.backgroundPrimary,
@@ -53,6 +58,8 @@ class HomeScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                NetWeekGraph(incomes: incomes, expenses: expenses),
+                const SizedBox(height: 16),
                 // Goal progress card — fills available space
                 Expanded(
                   child: GoalProgressCard(
