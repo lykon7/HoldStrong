@@ -245,6 +245,74 @@ class _NetLinePainter extends CustomPainter {
       }
     }
 
+    // Fill positive area (above baseline)
+    final positivePath = Path();
+    var hasPositive = false;
+    for (var i = 0; i < values.length; i++) {
+      final value = values[i];
+      if (value >= 0) {
+        final normalized = value / safeMax;
+        final y = baseline - (normalized * usableHeight);
+        final x = step * i;
+        if (!hasPositive) {
+          positivePath.moveTo(x, baseline);
+          positivePath.lineTo(x, y);
+          hasPositive = true;
+        } else {
+          positivePath.lineTo(x, y);
+        }
+      } else if (hasPositive) {
+        positivePath.lineTo(step * i, baseline);
+        final fillPaint = Paint()
+          ..color = _kIncomeGreen.withOpacity(0.25)
+          ..style = PaintingStyle.fill;
+        canvas.drawPath(positivePath, fillPaint);
+        positivePath.reset();
+        hasPositive = false;
+      }
+    }
+    if (hasPositive) {
+      positivePath.lineTo(step * (values.length - 1), baseline);
+      final fillPaint = Paint()
+        ..color = _kIncomeGreen.withOpacity(0.25)
+        ..style = PaintingStyle.fill;
+      canvas.drawPath(positivePath, fillPaint);
+    }
+
+    // Fill negative area (below baseline)
+    final negativePath = Path();
+    var hasNegative = false;
+    for (var i = 0; i < values.length; i++) {
+      final value = values[i];
+      if (value < 0) {
+        final normalized = value / safeMax;
+        final y = baseline - (normalized * usableHeight);
+        final x = step * i;
+        if (!hasNegative) {
+          negativePath.moveTo(x, baseline);
+          negativePath.lineTo(x, y);
+          hasNegative = true;
+        } else {
+          negativePath.lineTo(x, y);
+        }
+      } else if (hasNegative) {
+        negativePath.lineTo(step * i, baseline);
+        final fillPaint = Paint()
+          ..color = _kExpenseRed.withOpacity(0.25)
+          ..style = PaintingStyle.fill;
+        canvas.drawPath(negativePath, fillPaint);
+        negativePath.reset();
+        hasNegative = false;
+      }
+    }
+    if (hasNegative) {
+      negativePath.lineTo(step * (values.length - 1), baseline);
+      final fillPaint = Paint()
+        ..color = _kExpenseRed.withOpacity(0.25)
+        ..style = PaintingStyle.fill;
+      canvas.drawPath(negativePath, fillPaint);
+    }
+
     final strokePaint = Paint()
       ..color = AppColors.accentBlue.withOpacity(0.7)
       ..style = PaintingStyle.stroke
