@@ -105,16 +105,7 @@ class FundsScreen extends ConsumerWidget {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddFundSheet(context, ref),
-        backgroundColor: const Color(0xFF4A90D9),
-        foregroundColor: AppColors.backgroundPrimary,
-        elevation: 0,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(4)),
-        ),
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: null,
     );
   }
 
