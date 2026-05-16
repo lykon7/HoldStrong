@@ -11,7 +11,7 @@ class AppColors {
   static const accentBlue = Color(0xFF2A3A5C);
   static const textPrimary = Color(0xFFE8E8E8);
   static const textSecondary = Color(0xFF7A7D8A);
-  static const destructive = Color(0xFF8B2020);
+  static const destructive = Color(0xFFE55353); // Brighter red for better contrast
   static const cardBorder = Color(0xFF1E2230);
 }
 
