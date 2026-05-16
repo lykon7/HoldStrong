@@ -597,21 +597,36 @@ class _DayHeaderTile extends StatelessWidget {
       padding: const EdgeInsets.only(top: 16, bottom: 8),
       child: Row(
         children: [
-          Text(
-            header.label,
-            style: const TextStyle(
-              fontFamily: 'IBMPlexMono',
-              fontSize: 10,
-              letterSpacing: 2,
-              color: AppColors.textSecondary,
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                header.label,
+                style: const TextStyle(
+                  fontFamily: 'IBMPlexMono',
+                  fontSize: 10,
+                  letterSpacing: 2,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'NET $netPrefix${fmt.format(net.abs())}',
+                style: TextStyle(
+                  fontFamily: 'IBMPlexMono',
+                  fontSize: 11,
+                  letterSpacing: 1,
+                  color: netColor,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Container(
               height: 1,
               color: AppColors.cardBorder,
-              margin: const EdgeInsets.only(bottom: 2),
             ),
           ),
           const SizedBox(width: 8),
@@ -635,16 +650,6 @@ class _DayHeaderTile extends StatelessWidget {
                   fontSize: 10,
                   letterSpacing: 1,
                   color: _kExpenseRed,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'NET $netPrefix${fmt.format(net.abs())}',
-                style: TextStyle(
-                  fontFamily: 'IBMPlexMono',
-                  fontSize: 9,
-                  letterSpacing: 1,
-                  color: netColor,
                 ),
               ),
             ],
