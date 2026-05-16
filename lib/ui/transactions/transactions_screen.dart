@@ -423,6 +423,26 @@ class _SummaryCard extends StatelessWidget {
   final AsyncValue<double> expenseValue;
   final Color accentColor;
 
+  Widget _buildNetValue() {
+    if (incomeValue.hasValue && expenseValue.hasValue) {
+      final net = incomeValue.value! - expenseValue.value!;
+      final color = net >= 0 ? _kIncomeGreen : _kExpenseRed;
+      final prefix = net >= 0 ? '+' : '';
+      final fmt = NumberFormat('#,##0', 'en_US');
+      return Text(
+        'NET $prefix${fmt.format(net)}',
+        style: TextStyle(
+          fontFamily: 'IBMPlexMono',
+          fontSize: 9,
+          color: color,
+          letterSpacing: 0.5,
+          fontWeight: FontWeight.w600,
+        ),
+      );
+    }
+    return const SizedBox.shrink();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -457,6 +477,8 @@ class _SummaryCard extends StatelessWidget {
                   color: AppColors.textSecondary,
                 ),
               ),
+              const Spacer(),
+              _buildNetValue(),
             ],
           ),
           Column(
