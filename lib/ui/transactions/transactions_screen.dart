@@ -374,7 +374,7 @@ class _SummaryStrip extends StatelessWidget {
     final monthFmt = DateFormat('MMMM yyyy');
 
     return SizedBox(
-      height: 130,
+      height: 140,
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -433,7 +433,7 @@ class _SummaryCard extends StatelessWidget {
         'NET $prefix${fmt.format(net)}',
         style: TextStyle(
           fontFamily: 'IBMPlexMono',
-          fontSize: 9,
+          fontSize: 12,
           color: color,
           letterSpacing: 0.5,
           fontWeight: FontWeight.w600,
@@ -478,7 +478,15 @@ class _SummaryCard extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              _buildNetValue(),
+              Text(
+                sublabel,
+                style: const TextStyle(
+                  fontFamily: 'IBMPlexMono',
+                  fontSize: 9,
+                  color: AppColors.textSecondary,
+                  letterSpacing: 0.5,
+                ),
+              ),
             ],
           ),
           Column(
@@ -497,15 +505,7 @@ class _SummaryCard extends StatelessWidget {
               ),
             ],
           ),
-          Text(
-            sublabel,
-            style: const TextStyle(
-              fontFamily: 'IBMPlexMono',
-              fontSize: 9,
-              color: AppColors.textSecondary,
-              letterSpacing: 0.5,
-            ),
-          ),
+          _buildNetValue(),
         ],
       ),
     );
