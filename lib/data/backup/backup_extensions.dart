@@ -1,0 +1,182 @@
+import '../../data/models/goal.dart';
+import '../../data/models/resist_entry.dart';
+import '../../data/models/craving_label.dart';
+import '../../data/models/income_entry.dart';
+import '../../data/models/expense_entry.dart';
+import '../../data/models/fund_account.dart';
+import '../../data/models/recurring_transaction.dart';
+
+// ─── Goal ────────────────────────────────────────────────────────────────────
+
+extension GoalBackup on Goal {
+  Map<String, dynamic> toBackupJson() => {
+        'uuid': uuid,
+        'name': name,
+        'type': type.index,
+        'targetAmountLkr': targetAmountLkr,
+        'currency': currency,
+        'fitnessMilestone': fitnessMilestone,
+        'createdAt': createdAt.toIso8601String(),
+        'targetDate': targetDate?.toIso8601String(),
+        'isActive': isActive,
+        'isCompleted': isCompleted,
+        'completedAt': completedAt?.toIso8601String(),
+      };
+}
+
+Goal goalFromBackupJson(Map<String, dynamic> j) {
+  return Goal()
+    ..uuid = j['uuid'] as String
+    ..name = j['name'] as String
+    ..type = GoalType.values[j['type'] as int]
+    ..targetAmountLkr = (j['targetAmountLkr'] as num).toDouble()
+    ..currency = j['currency'] as String? ?? 'LKR'
+    ..fitnessMilestone = j['fitnessMilestone'] as String?
+    ..createdAt = DateTime.parse(j['createdAt'] as String)
+    ..targetDate = j['targetDate'] != null
+        ? DateTime.parse(j['targetDate'] as String)
+        : null
+    ..isActive = j['isActive'] as bool? ?? false
+    ..isCompleted = j['isCompleted'] as bool? ?? false
+    ..completedAt = j['completedAt'] != null
+        ? DateTime.parse(j['completedAt'] as String)
+        : null;
+}
+
+// ─── ResistEntry ─────────────────────────────────────────────────────────────
+
+extension ResistEntryBackup on ResistEntry {
+  Map<String, dynamic> toBackupJson() => {
+        'uuid': uuid,
+        'goalUuid': goalUuid,
+        'amountLkr': amountLkr,
+        'label': label,
+        'caloriesAvoided': caloriesAvoided,
+        'note': note,
+        'loggedAt': loggedAt.toIso8601String(),
+      };
+}
+
+ResistEntry resistEntryFromBackupJson(Map<String, dynamic> j) {
+  return ResistEntry()
+    ..uuid = j['uuid'] as String
+    ..goalUuid = j['goalUuid'] as String
+    ..amountLkr = (j['amountLkr'] as num).toDouble()
+    ..label = j['label'] as String?
+    ..caloriesAvoided = j['caloriesAvoided'] as int?
+    ..note = j['note'] as String?
+    ..loggedAt = DateTime.parse(j['loggedAt'] as String);
+}
+
+// ─── CravingLabel ─────────────────────────────────────────────────────────────
+
+extension CravingLabelBackup on CravingLabel {
+  Map<String, dynamic> toBackupJson() => {
+        'uuid': uuid,
+        'name': name,
+        'defaultCalories': defaultCalories,
+        'useCount': useCount,
+        'lastUsed': lastUsed.toIso8601String(),
+      };
+}
+
+CravingLabel cravingLabelFromBackupJson(Map<String, dynamic> j) {
+  return CravingLabel()
+    ..uuid = j['uuid'] as String
+    ..name = j['name'] as String
+    ..defaultCalories = j['defaultCalories'] as int?
+    ..useCount = j['useCount'] as int? ?? 0
+    ..lastUsed = DateTime.parse(j['lastUsed'] as String);
+}
+
+// ─── IncomeEntry ─────────────────────────────────────────────────────────────
+
+extension IncomeEntryBackup on IncomeEntry {
+  Map<String, dynamic> toBackupJson() => {
+        'uuid': uuid,
+        'amount': amount,
+        'source': source,
+        'fundUuid': fundUuid,
+        'loggedAt': loggedAt.toIso8601String(),
+      };
+}
+
+IncomeEntry incomeEntryFromBackupJson(Map<String, dynamic> j) {
+  return IncomeEntry()
+    ..uuid = j['uuid'] as String
+    ..amount = (j['amount'] as num).toDouble()
+    ..source = j['source'] as String
+    ..fundUuid = j['fundUuid'] as String?
+    ..loggedAt = DateTime.parse(j['loggedAt'] as String);
+}
+
+// ─── ExpenseEntry ─────────────────────────────────────────────────────────────
+
+extension ExpenseEntryBackup on ExpenseEntry {
+  Map<String, dynamic> toBackupJson() => {
+        'uuid': uuid,
+        'amount': amount,
+        'purpose': purpose,
+        'fundUuid': fundUuid,
+        'loggedAt': loggedAt.toIso8601String(),
+      };
+}
+
+ExpenseEntry expenseEntryFromBackupJson(Map<String, dynamic> j) {
+  return ExpenseEntry()
+    ..uuid = j['uuid'] as String
+    ..amount = (j['amount'] as num).toDouble()
+    ..purpose = j['purpose'] as String
+    ..fundUuid = j['fundUuid'] as String?
+    ..loggedAt = DateTime.parse(j['loggedAt'] as String);
+}
+
+// ─── FundAccount ─────────────────────────────────────────────────────────────
+
+extension FundAccountBackup on FundAccount {
+  Map<String, dynamic> toBackupJson() => {
+        'uuid': uuid,
+        'name': name,
+        'openingBalance': openingBalance,
+        'createdAt': createdAt.toIso8601String(),
+      };
+}
+
+FundAccount fundAccountFromBackupJson(Map<String, dynamic> j) {
+  return FundAccount()
+    ..uuid = j['uuid'] as String
+    ..name = j['name'] as String
+    ..openingBalance = (j['openingBalance'] as num).toDouble()
+    ..createdAt = DateTime.parse(j['createdAt'] as String);
+}
+
+// ─── RecurringTransaction ─────────────────────────────────────────────────────
+
+extension RecurringTransactionBackup on RecurringTransaction {
+  Map<String, dynamic> toBackupJson() => {
+        'uuid': uuid,
+        'type': type,
+        'amount': amount,
+        'title': title,
+        'fundUuid': fundUuid,
+        'startAt': startAt.toIso8601String(),
+        'lastGeneratedAt': lastGeneratedAt?.toIso8601String(),
+        'frequency': frequency,
+        'isActive': isActive,
+      };
+}
+
+RecurringTransaction recurringTransactionFromBackupJson(Map<String, dynamic> j) {
+  return RecurringTransaction()
+    ..uuid = j['uuid'] as String
+    ..type = j['type'] as int
+    ..amount = (j['amount'] as num).toDouble()
+    ..title = j['title'] as String
+    ..fundUuid = j['fundUuid'] as String?
+    ..startAt = DateTime.parse(j['startAt'] as String)
+    ..lastGeneratedAt = j['lastGeneratedAt'] != null
+        ? DateTime.parse(j['lastGeneratedAt'] as String)
+        : null
+    ..frequency = j['frequency'] as int
+    ..isActive = j['isActive'] as bool? ?? true;
+}
