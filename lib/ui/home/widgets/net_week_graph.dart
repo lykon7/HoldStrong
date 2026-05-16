@@ -225,6 +225,8 @@ class _NetLinePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final baseline = size.height / 2;
     final usableHeight = baseline - 6;
+    
+    // Draw baseline
     final linePaint = Paint()
       ..color = AppColors.cardBorder
       ..strokeWidth = 1;
@@ -240,92 +242,65 @@ class _NetLinePainter extends CustomPainter {
     final step = values.length == 1 ? 0.0 : size.width / (values.length - 1);
 
     final path = Path();
-    for (var i = 0; i < values.length; i++) {
+    
+    var prevX = 0.0;
+    var prevY = baseline - ((values[0] / safeMax) * usableHeight);
+    path.moveTo(prevX, prevY);
+
+    for (var i = 1; i < values.length; i++) {
       final value = values[i];
       final normalized = value / safeMax;
       final y = baseline - (normalized * usableHeight);
       final x = step * i;
-      if (i == 0) {
-        path.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
-      }
+      
+      final controlX = (prevX + x) / 2;
+      path.cubicTo(controlX, prevY, controlX, y, x, y);
+      
+      prevX = x;
+      prevY = y;
     }
 
-    // Fill positive area (above baseline)
-    final positivePath = Path();
-    var hasPositive = false;
-    for (var i = 0; i < values.length; i++) {
-      final value = values[i];
-      if (value >= 0) {
-        final normalized = value / safeMax;
-        final y = baseline - (normalized * usableHeight);
-        final x = step * i;
-        if (!hasPositive) {
-          positivePath.moveTo(x, baseline);
-          positivePath.lineTo(x, y);
-          hasPositive = true;
-        } else {
-          positivePath.lineTo(x, y);
-        }
-      } else if (hasPositive) {
-        positivePath.lineTo(step * i, baseline);
-        final fillPaint = Paint()
-          ..color = _kIncomeGreen.withOpacity(0.25)
-          ..style = PaintingStyle.fill;
-        canvas.drawPath(positivePath, fillPaint);
-        positivePath.reset();
-        hasPositive = false;
-      }
-    }
-    if (hasPositive) {
-      positivePath.lineTo(step * (values.length - 1), baseline);
-      final fillPaint = Paint()
-        ..color = _kIncomeGreen.withOpacity(0.25)
-        ..style = PaintingStyle.fill;
-      canvas.drawPath(positivePath, fillPaint);
-    }
+    final fillRect = Rect.fromLTWH(0, 0, size.width, size.height);
 
-    // Fill negative area (below baseline)
-    final negativePath = Path();
-    var hasNegative = false;
-    for (var i = 0; i < values.length; i++) {
-      final value = values[i];
-      if (value < 0) {
-        final normalized = value / safeMax;
-        final y = baseline - (normalized * usableHeight);
-        final x = step * i;
-        if (!hasNegative) {
-          negativePath.moveTo(x, baseline);
-          negativePath.lineTo(x, y);
-          hasNegative = true;
-        } else {
-          negativePath.lineTo(x, y);
-        }
-      } else if (hasNegative) {
-        negativePath.lineTo(step * i, baseline);
-        final fillPaint = Paint()
-          ..color = _kExpenseRed.withOpacity(0.25)
-          ..style = PaintingStyle.fill;
-        canvas.drawPath(negativePath, fillPaint);
-        negativePath.reset();
-        hasNegative = false;
-      }
-    }
-    if (hasNegative) {
-      negativePath.lineTo(step * (values.length - 1), baseline);
-      final fillPaint = Paint()
-        ..color = _kExpenseRed.withOpacity(0.25)
-        ..style = PaintingStyle.fill;
-      canvas.drawPath(negativePath, fillPaint);
-    }
+    // Create a continuous fill area down to the baseline
+    final fillPath = Path.from(path)
+      ..lineTo(size.width, baseline)
+      ..lineTo(0, baseline)
+      ..close();
+
+    final fillPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          _kIncomeGreen.withOpacity(0.5),
+          _kIncomeGreen.withOpacity(0.0),
+          _kExpenseRed.withOpacity(0.0),
+          _kExpenseRed.withOpacity(0.5),
+        ],
+        stops: const [0.0, 0.5, 0.5, 1.0],
+      ).createShader(fillRect);
+      
+    canvas.drawPath(fillPath, fillPaint);
 
     final strokePaint = Paint()
-      ..color = AppColors.accentBlue.withOpacity(0.7)
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          _kIncomeGreen,
+          _kIncomeGreen.withOpacity(0.3),
+          _kExpenseRed.withOpacity(0.3),
+          _kExpenseRed,
+        ],
+        stops: const [0.0, 0.5, 0.5, 1.0],
+      ).createShader(fillRect)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
+      ..strokeWidth = 2.5;
+      
     canvas.drawPath(path, strokePaint);
 
+    // Draw dots
     for (var i = 0; i < values.length; i++) {
       final value = values[i];
       final normalized = value / safeMax;
@@ -334,7 +309,13 @@ class _NetLinePainter extends CustomPainter {
       final dotPaint = Paint()
         ..color = value >= 0 ? _kIncomeGreen : _kExpenseRed
         ..style = PaintingStyle.fill;
-      canvas.drawCircle(Offset(x, y), 3.2, dotPaint);
+      canvas.drawCircle(Offset(x, y), 3.5, dotPaint);
+      
+      // Add a small inner dot for a premium look
+      final innerDot = Paint()
+        ..color = AppColors.backgroundElevated
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(Offset(x, y), 1.5, innerDot);
     }
   }
 
