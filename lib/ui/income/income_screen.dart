@@ -867,8 +867,9 @@ class _EditIncomeSheetState extends ConsumerState<_EditIncomeSheet> {
   Future<void> _save() async {
     final amountStr = _amountCtrl.text.trim();
     final source = _sourceCtrl.text.trim();
-    if (amountStr.isEmpty || source.isEmpty || _selectedFundUuid == null)
+    if (amountStr.isEmpty || source.isEmpty || _selectedFundUuid == null) {
       return;
+    }
     final amount = double.tryParse(amountStr);
     if (amount == null || amount <= 0) return;
 

@@ -932,8 +932,9 @@ class _EditExpenseSheetState extends ConsumerState<_EditExpenseSheet> {
   Future<void> _save() async {
     final amountStr = _amountCtrl.text.trim();
     final purpose = _purposeCtrl.text.trim();
-    if (amountStr.isEmpty || purpose.isEmpty || _selectedFundUuid == null)
+    if (amountStr.isEmpty || purpose.isEmpty || _selectedFundUuid == null) {
       return;
+    }
     final amount = double.tryParse(amountStr);
     if (amount == null || amount <= 0) return;
 

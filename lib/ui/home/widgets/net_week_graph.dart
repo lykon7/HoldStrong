@@ -31,7 +31,7 @@ class _NetWeekGraphState extends State<NetWeekGraph> {
   @override
   void initState() {
     super.initState();
-    _controller = PageController(viewportFraction: 0.92);
+    _controller = PageController(viewportFraction: 0.88);
   }
 
   @override
@@ -58,6 +58,7 @@ class _NetWeekGraphState extends State<NetWeekGraph> {
               controller: _controller,
               itemCount: widget.weeksToShow,
               physics: const BouncingScrollPhysics(),
+              padEnds: false,
               itemBuilder: (context, index) {
                 final now = DateTime.now();
                 final start = _startOfWeek(now)
@@ -73,11 +74,17 @@ class _NetWeekGraphState extends State<NetWeekGraph> {
                         (expenseTotals[_dayKey(d)] ?? 0))
                     .toList();
 
-                return _WeekCard(
-                  index: index,
-                  weekStart: start,
-                  weekEnd: end,
-                  values: values,
+                return Padding(
+                  padding: EdgeInsets.only(
+                    left: index == 0 ? 2 : 6,
+                    right: index == widget.weeksToShow - 1 ? 2 : 6,
+                  ),
+                  child: _WeekCard(
+                    index: index,
+                    weekStart: start,
+                    weekEnd: end,
+                    values: values,
+                  ),
                 );
               },
             ),
@@ -143,7 +150,7 @@ class _WeekCard extends StatelessWidget {
         : values.map((v) => v.abs()).fold<double>(0.0, math.max);
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 4),
+      width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.backgroundElevated,

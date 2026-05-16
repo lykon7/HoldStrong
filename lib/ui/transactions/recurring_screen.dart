@@ -250,7 +250,7 @@ class _RecurringCard extends StatelessWidget {
                 Switch(
                   value: rule.isActive,
                   onChanged: onToggleActive,
-                  activeColor: amountColor,
+                  activeThumbColor: amountColor,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
               ],
@@ -414,7 +414,7 @@ class _EditRecurringSheetState extends ConsumerState<_EditRecurringSheet> {
                 const _SheetLabel('TYPE'),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<RecurringTransactionType>(
-                  value: _type,
+                  initialValue: _type,
                   decoration: const InputDecoration(hintText: 'Type'),
                   items: RecurringTransactionType.values.map((type) {
                     return DropdownMenuItem(
@@ -602,7 +602,7 @@ class _EditRecurringSheetState extends ConsumerState<_EditRecurringSheet> {
                 const _SheetLabel('FREQUENCY'),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<RecurrenceFrequency>(
-                  value: _frequency,
+                  initialValue: _frequency,
                   decoration: const InputDecoration(hintText: 'Frequency'),
                   icon: const Icon(Icons.expand_more),
                   items: RecurrenceFrequency.values.map((freq) {
@@ -625,7 +625,7 @@ class _EditRecurringSheetState extends ConsumerState<_EditRecurringSheet> {
                       value: _isActive,
                       onChanged: (value) =>
                           setState(() => _isActive = value),
-                      activeColor: amountColor,
+                      activeThumbColor: amountColor,
                     ),
                     const SizedBox(width: 8),
                     Text(

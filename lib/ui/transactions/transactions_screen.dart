@@ -617,7 +617,7 @@ class _DayHeaderTile extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                'NET ${netPrefix}${fmt.format(net.abs())}',
+                'NET $netPrefix${fmt.format(net.abs())}',
                 style: TextStyle(
                   fontFamily: 'IBMPlexMono',
                   fontSize: 9,
@@ -1233,7 +1233,7 @@ class _AddIncomeSheetState extends ConsumerState<_AddIncomeSheet> {
                       value: _isRecurring,
                       onChanged: (value) =>
                           setState(() => _isRecurring = value),
-                      activeColor: _kIncomeGreen,
+                      activeThumbColor: _kIncomeGreen,
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -1250,7 +1250,7 @@ class _AddIncomeSheetState extends ConsumerState<_AddIncomeSheet> {
                 if (_isRecurring) ...[
                   const SizedBox(height: 8),
                   DropdownButtonFormField<RecurrenceFrequency>(
-                    value: _frequency,
+                    initialValue: _frequency,
                     decoration: const InputDecoration(
                       hintText: 'Frequency',
                     ),
@@ -1977,7 +1977,7 @@ class _AddExpenseSheetState extends ConsumerState<_AddExpenseSheet> {
                       value: _isRecurring,
                       onChanged: (value) =>
                           setState(() => _isRecurring = value),
-                      activeColor: AppColors.accentGold,
+                      activeThumbColor: AppColors.accentGold,
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -1994,7 +1994,7 @@ class _AddExpenseSheetState extends ConsumerState<_AddExpenseSheet> {
                 if (_isRecurring) ...[
                   const SizedBox(height: 8),
                   DropdownButtonFormField<RecurrenceFrequency>(
-                    value: _frequency,
+                    initialValue: _frequency,
                     decoration: const InputDecoration(
                       hintText: 'Frequency',
                     ),
