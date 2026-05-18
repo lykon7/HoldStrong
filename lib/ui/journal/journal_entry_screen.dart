@@ -73,6 +73,8 @@ class _JournalEntryScreenState extends ConsumerState<JournalEntryScreen> {
           ..uuid = const Uuid().v4()
           ..date = _date
           ..createdAt = now;
+      } else {
+        _existingEntry!.date = _date;
       }
       _existingEntry!.content = content;
       _existingEntry!.updatedAt = now;

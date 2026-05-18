@@ -8,6 +8,33 @@ import '../../domain/providers/journal_providers.dart';
 class JournalScreen extends ConsumerWidget {
   const JournalScreen({super.key});
 
+  Future<void> _pickDateAndGo(BuildContext context) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: AppColors.accentGold,
+              onPrimary: Colors.black,
+              surface: AppColors.backgroundElevated,
+              onSurface: AppColors.textPrimary,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null && context.mounted) {
+      final dateStr = DateFormat('yyyy-MM-dd').format(picked);
+      context.push('/journal/$dateStr');
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final entriesAsync = ref.watch(allJournalEntriesProvider);
@@ -20,11 +47,7 @@ class JournalScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.add, size: 22),
             tooltip: 'Write Entry',
-            onPressed: () {
-              final today = DateTime.now();
-              final dateStr = DateFormat('yyyy-MM-dd').format(today);
-              context.push('/journal/$dateStr');
-            },
+            onPressed: () => _pickDateAndGo(context),
           ),
         ],
       ),
@@ -64,11 +87,7 @@ class JournalScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 8),
                   TextButton(
-                    onPressed: () {
-                      final today = DateTime.now();
-                      final dateStr = DateFormat('yyyy-MM-dd').format(today);
-                      context.push('/journal/$dateStr');
-                    },
+                    onPressed: () => _pickDateAndGo(context),
                     child: const Text(
                       'START WRITING',
                       style: TextStyle(
