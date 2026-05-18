@@ -166,26 +166,28 @@ class _JournalEntryScreenState extends ConsumerState<JournalEntryScreen> {
           ? const Center(
               child: CircularProgressIndicator(color: AppColors.accentGold),
             )
-          : Padding(
-              padding: const EdgeInsets.all(16),
-              child: TextField(
-                controller: _contentController,
-                maxLines: null,
-                expands: true,
-                textAlignVertical: TextAlignVertical.top,
-                style: const TextStyle(
-                  fontFamily: 'Rajdhani',
-                  fontSize: 18,
-                  color: AppColors.textPrimary,
-                  height: 1.5,
+          : TextField(
+              controller: _contentController,
+              maxLines: null,
+              expands: true,
+              textAlignVertical: TextAlignVertical.top,
+              textCapitalization: TextCapitalization.sentences,
+              onTapOutside: (event) {
+                FocusManager.instance.primaryFocus?.unfocus();
+              },
+              style: const TextStyle(
+                fontFamily: 'Rajdhani',
+                fontSize: 18,
+                color: AppColors.textPrimary,
+                height: 1.5,
+              ),
+              decoration: const InputDecoration(
+                contentPadding: EdgeInsets.all(16),
+                hintText: 'What\'s on your mind?',
+                hintStyle: TextStyle(
+                  color: AppColors.textSecondary,
                 ),
-                decoration: const InputDecoration(
-                  hintText: 'What\'s on your mind?',
-                  hintStyle: TextStyle(
-                    color: AppColors.textSecondary,
-                  ),
-                  border: InputBorder.none,
-                ),
+                border: InputBorder.none,
               ),
             ),
     );
