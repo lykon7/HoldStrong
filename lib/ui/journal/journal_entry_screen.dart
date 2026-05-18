@@ -19,6 +19,7 @@ class JournalEntryScreen extends ConsumerStatefulWidget {
 class _JournalEntryScreenState extends ConsumerState<JournalEntryScreen> {
   late DateTime _date;
   final _contentController = TextEditingController();
+  final _undoController = UndoHistoryController();
   JournalEntry? _existingEntry;
   bool _isLoading = true;
   Timer? _debounce;
@@ -88,6 +89,7 @@ class _JournalEntryScreenState extends ConsumerState<JournalEntryScreen> {
   void dispose() {
     _debounce?.cancel();
     _contentController.dispose();
+    _undoController.dispose();
     super.dispose();
   }
 
@@ -160,6 +162,26 @@ class _JournalEntryScreenState extends ConsumerState<JournalEntryScreen> {
           ),
         ),
         actions: [
+          ValueListenableBuilder<UndoHistoryValue>(
+            valueListenable: _undoController,
+            builder: (context, value, child) {
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.undo, size: 20),
+                    onPressed: value.canUndo ? () => _undoController.undo() : null,
+                    color: value.canUndo ? AppColors.textPrimary : AppColors.textSecondary.withOpacity(0.5),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.redo, size: 20),
+                    onPressed: value.canRedo ? () => _undoController.redo() : null,
+                    color: value.canRedo ? AppColors.textPrimary : AppColors.textSecondary.withOpacity(0.5),
+                  ),
+                ],
+              );
+            },
+          ),
           TextButton(
             onPressed: _isLoading ? null : () => _performSave(isAutoSave: false),
             child: const Text(
@@ -180,6 +202,7 @@ class _JournalEntryScreenState extends ConsumerState<JournalEntryScreen> {
             )
           : TextField(
               controller: _contentController,
+              undoController: _undoController,
               maxLines: null,
               expands: true,
               textAlignVertical: TextAlignVertical.top,
