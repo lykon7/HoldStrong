@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -20,12 +21,21 @@ class _JournalEntryScreenState extends ConsumerState<JournalEntryScreen> {
   final _contentController = TextEditingController();
   JournalEntry? _existingEntry;
   bool _isLoading = true;
+  Timer? _debounce;
 
   @override
   void initState() {
     super.initState();
     _date = DateTime.parse(widget.dateString);
     _loadEntry();
+    _contentController.addListener(_onTextChanged);
+  }
+
+  void _onTextChanged() {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      _performSave(isAutoSave: true);
+    });
   }
 
   Future<void> _loadEntry() async {
@@ -43,38 +53,40 @@ class _JournalEntryScreenState extends ConsumerState<JournalEntryScreen> {
     }
   }
 
-  Future<void> _saveEntry() async {
+  Future<void> _performSave({bool isAutoSave = false}) async {
     final content = _contentController.text.trim();
     if (content.isEmpty && _existingEntry == null) {
-      Navigator.of(context).pop();
+      if (!isAutoSave && mounted) Navigator.of(context).pop();
       return;
     }
 
     final repo = ref.read(journalRepositoryProvider);
 
     if (content.isEmpty && _existingEntry != null) {
-      // Delete if content cleared
       await repo.deleteEntry(_existingEntry!.uuid);
+      _existingEntry = null;
     } else {
       final now = DateTime.now();
-      final entryToSave = _existingEntry ?? JournalEntry()
-        ..uuid = const Uuid().v4()
-        ..date = _date
-        ..createdAt = now;
+      if (_existingEntry == null) {
+        _existingEntry = JournalEntry()
+          ..uuid = const Uuid().v4()
+          ..date = _date
+          ..createdAt = now;
+      }
+      _existingEntry!.content = content;
+      _existingEntry!.updatedAt = now;
 
-      entryToSave.content = content;
-      entryToSave.updatedAt = now;
-
-      await repo.saveEntry(entryToSave);
+      await repo.saveEntry(_existingEntry!);
     }
 
-    if (mounted) {
+    if (!isAutoSave && mounted) {
       Navigator.of(context).pop();
     }
   }
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _contentController.dispose();
     super.dispose();
   }
@@ -149,9 +161,9 @@ class _JournalEntryScreenState extends ConsumerState<JournalEntryScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: _isLoading ? null : _saveEntry,
+            onPressed: _isLoading ? null : () => _performSave(isAutoSave: false),
             child: const Text(
-              'SAVE',
+              'DONE',
               style: TextStyle(
                 fontFamily: 'Rajdhani',
                 fontWeight: FontWeight.w700,
