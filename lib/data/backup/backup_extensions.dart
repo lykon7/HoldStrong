@@ -5,6 +5,7 @@ import '../../data/models/income_entry.dart';
 import '../../data/models/expense_entry.dart';
 import '../../data/models/fund_account.dart';
 import '../../data/models/recurring_transaction.dart';
+import '../../data/models/journal_entry.dart';
 
 // ─── Goal ────────────────────────────────────────────────────────────────────
 
@@ -179,4 +180,25 @@ RecurringTransaction recurringTransactionFromBackupJson(Map<String, dynamic> j) 
         : null
     ..frequency = j['frequency'] as int
     ..isActive = j['isActive'] as bool? ?? true;
+}
+
+// ─── JournalEntry ─────────────────────────────────────────────────────────────
+
+extension JournalEntryBackup on JournalEntry {
+  Map<String, dynamic> toBackupJson() => {
+        'uuid': uuid,
+        'content': content,
+        'date': date.toIso8601String(),
+        'createdAt': createdAt.toIso8601String(),
+        'updatedAt': updatedAt.toIso8601String(),
+      };
+}
+
+JournalEntry journalEntryFromBackupJson(Map<String, dynamic> j) {
+  return JournalEntry()
+    ..uuid = j['uuid'] as String
+    ..content = j['content'] as String
+    ..date = DateTime.parse(j['date'] as String)
+    ..createdAt = DateTime.parse(j['createdAt'] as String)
+    ..updatedAt = DateTime.parse(j['updatedAt'] as String);
 }

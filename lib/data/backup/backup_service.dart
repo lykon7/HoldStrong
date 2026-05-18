@@ -11,6 +11,7 @@ import '../models/income_entry.dart';
 import '../models/expense_entry.dart';
 import '../models/fund_account.dart';
 import '../models/recurring_transaction.dart';
+import '../models/journal_entry.dart';
 import 'backup_extensions.dart';
 
 const _kBackupVersion = 1;
@@ -53,6 +54,7 @@ class BackupService {
       final expenses = await _isar.expenseEntrys.where().findAll();
       final funds = await _isar.fundAccounts.where().findAll();
       final recurring = await _isar.recurringTransactions.where().findAll();
+      final journals = await _isar.journalEntrys.where().findAll();
 
       final payload = <String, dynamic>{
         'version': _kBackupVersion,
@@ -65,6 +67,7 @@ class BackupService {
         'fundAccounts': funds.map((e) => e.toBackupJson()).toList(),
         'recurringTransactions':
             recurring.map((e) => e.toBackupJson()).toList(),
+        'journalEntries': journals.map((e) => e.toBackupJson()).toList(),
       };
 
       final jsonStr = const JsonEncoder.withIndent('  ').convert(payload);
@@ -102,6 +105,7 @@ class BackupService {
         'expenseEntries': 0,
         'fundAccounts': 0,
         'recurringTransactions': 0,
+        'journalEntries': 0,
       };
 
       await _isar.writeTxn(() async {
@@ -197,6 +201,19 @@ class BackupService {
                 .put(recurringTransactionFromBackupJson(j));
             counts['recurringTransactions'] =
                 counts['recurringTransactions']! + 1;
+          }
+        }
+
+        // Journal entries
+        final journalList = (json['journalEntries'] as List<dynamic>? ?? [])
+            .cast<Map<String, dynamic>>();
+        for (final j in journalList) {
+          final uuid = j['uuid'] as String;
+          final existing =
+              await _isar.journalEntrys.filter().uuidEqualTo(uuid).findFirst();
+          if (existing == null) {
+            await _isar.journalEntrys.put(journalEntryFromBackupJson(j));
+            counts['journalEntries'] = counts['journalEntries']! + 1;
           }
         }
       });
