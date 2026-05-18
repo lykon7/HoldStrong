@@ -79,6 +79,49 @@ class _JournalEntryScreenState extends ConsumerState<JournalEntryScreen> {
     super.dispose();
   }
 
+  Future<void> _selectDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _date,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: AppColors.accentGold,
+              onPrimary: Colors.black,
+              surface: AppColors.backgroundElevated,
+              onSurface: AppColors.textPrimary,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null && picked != _date) {
+      final repo = ref.read(journalRepositoryProvider);
+      final existingForNewDate = await repo.getEntryForDate(picked);
+
+      if (existingForNewDate != null && existingForNewDate.uuid != _existingEntry?.uuid) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('An entry already exists for this date. Please select another date.'),
+              backgroundColor: AppColors.destructive,
+            ),
+          );
+        }
+        return;
+      }
+
+      setState(() {
+        _date = picked;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final dateFmt = DateFormat('EEEE, d MMM yyyy');
@@ -86,7 +129,24 @@ class _JournalEntryScreenState extends ConsumerState<JournalEntryScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundPrimary,
       appBar: AppBar(
-        title: Text(dateFmt.format(_date).toUpperCase()),
+        title: GestureDetector(
+          onTap: _selectDate,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                dateFmt.format(_date).toUpperCase(),
+                style: const TextStyle(
+                  fontFamily: 'IBMPlexMono',
+                  fontSize: 14,
+                  letterSpacing: 1,
+                ),
+              ),
+              const SizedBox(width: 4),
+              const Icon(Icons.edit_calendar_outlined, size: 16, color: AppColors.textSecondary),
+            ],
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: _isLoading ? null : _saveEntry,
