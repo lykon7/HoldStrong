@@ -29,6 +29,12 @@ class HubScreen extends StatelessWidget {
               color: Colors.amber,
               onTap: () => context.push('/hub/wishlist'),
             ),
+            _HubCard(
+              title: 'Workout',
+              icon: Icons.fitness_center,
+              color: Colors.orange,
+              onTap: () => context.push('/hub/workout'),
+            ),
             // We can easily add more features here later
           ],
         ),

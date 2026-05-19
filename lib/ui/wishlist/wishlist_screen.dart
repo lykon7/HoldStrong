@@ -45,7 +45,7 @@ class WishlistScreen extends ConsumerWidget {
                   title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: Text('Added ${item.createdAt.toString().split(' ')[0]}'),
                   trailing: Text(
-                    '\$${item.estimatedCost.toStringAsFixed(2)}',
+                    'LKR ${item.estimatedCost.toStringAsFixed(2)}',
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.primary,
                       fontSize: 16,
