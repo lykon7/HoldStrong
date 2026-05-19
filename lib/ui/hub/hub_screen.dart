@@ -35,6 +35,12 @@ class HubScreen extends StatelessWidget {
               color: Colors.orange,
               onTap: () => context.push('/hub/workout'),
             ),
+            _HubCard(
+              title: 'To-Do List',
+              icon: Icons.checklist,
+              color: Colors.teal,
+              onTap: () => context.push('/hub/todo'),
+            ),
             // We can easily add more features here later
           ],
         ),

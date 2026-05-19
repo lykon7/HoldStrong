@@ -17,6 +17,7 @@ import '../ui/journal/journal_entry_screen.dart';
 import '../ui/hub/hub_screen.dart';
 import '../ui/wishlist/wishlist_screen.dart';
 import '../ui/workout/workout_screen.dart';
+import '../ui/todo/todo_screen.dart';
 
 final goRouterProvider = Provider<GoRouter>((ref) {
   final activeGoalNotifier = ref.watch(activeGoalProvider);
@@ -91,6 +92,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/hub/workout',
         builder: (context, state) => const WorkoutScreen(),
+      ),
+      GoRoute(
+        path: '/hub/todo',
+        builder: (context, state) => const TodoScreen(),
       ),
       GoRoute(
         path: '/log',
