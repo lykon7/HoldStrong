@@ -15,6 +15,7 @@ import 'data/models/income_entry.dart';
 import 'data/models/fund_account.dart';
 import 'data/models/recurring_transaction.dart';
 import 'data/models/journal_entry.dart';
+import 'data/models/wishlist_item.dart';
 import 'domain/providers/goal_providers.dart';
 
 void main() async {
@@ -31,6 +32,7 @@ void main() async {
       FundAccountSchema,
       RecurringTransactionSchema,
       JournalEntrySchema,
+      WishlistItemSchema,
     ],
     directory: dir.path,
     name: AppConstants.kIsarDbName,

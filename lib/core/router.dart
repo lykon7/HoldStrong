@@ -14,6 +14,8 @@ import '../ui/transactions/recurring_screen.dart';
 import '../ui/funds/funds_screen.dart';
 import '../ui/journal/journal_screen.dart';
 import '../ui/journal/journal_entry_screen.dart';
+import '../ui/hub/hub_screen.dart';
+import '../ui/wishlist/wishlist_screen.dart';
 
 final goRouterProvider = Provider<GoRouter>((ref) {
   final activeGoalNotifier = ref.watch(activeGoalProvider);
@@ -72,10 +74,18 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const FundsScreen(),
           ),
           GoRoute(
-            path: '/journal',
-            builder: (context, state) => const JournalScreen(),
+            path: '/hub',
+            builder: (context, state) => const HubScreen(),
           ),
         ],
+      ),
+      GoRoute(
+        path: '/hub/journal',
+        builder: (context, state) => const JournalScreen(),
+      ),
+      GoRoute(
+        path: '/hub/wishlist',
+        builder: (context, state) => const WishlistScreen(),
       ),
       GoRoute(
         path: '/log',
@@ -154,7 +164,7 @@ class _MainShell extends ConsumerStatefulWidget {
 class _MainShellState extends ConsumerState<_MainShell> {
   int _selectedIndex = 0;
 
-  static const _tabs = ['/', '/resists', '/transactions', '/funds', '/journal'];
+  static const _tabs = ['/', '/resists', '/transactions', '/funds', '/hub'];
 
   @override
   Widget build(BuildContext context) {
@@ -171,7 +181,7 @@ class _MainShellState extends ConsumerState<_MainShell> {
           NavigationDestination(icon: Icon(Icons.shield_outlined), label: 'RESISTS'),
           NavigationDestination(icon: Icon(Icons.swap_horiz), label: 'TRANSACTIONS'),
           NavigationDestination(icon: Icon(Icons.savings_outlined), label: 'FUNDS'),
-          NavigationDestination(icon: Icon(Icons.mode_edit_outlined), label: 'JOURNAL'),
+          NavigationDestination(icon: Icon(Icons.grid_view), label: 'HUB'),
         ],
       ),
     );
