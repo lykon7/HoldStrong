@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../domain/providers/todo_providers.dart';
+import '../../data/models/todo_item.dart';
 
 class TodoScreen extends ConsumerWidget {
   const TodoScreen({super.key});
@@ -36,15 +37,30 @@ class TodoScreen extends ConsumerWidget {
 
               return Dismissible(
                 key: ValueKey(item.id),
-                direction: DismissDirection.endToStart,
+                direction: DismissDirection.horizontal,
                 background: Container(
+                  color: Colors.green.withOpacity(0.8),
+                  alignment: Alignment.centerLeft,
+                  padding: const EdgeInsets.only(left: 20),
+                  child: const Icon(Icons.edit, color: Colors.white),
+                ),
+                secondaryBackground: Container(
                   color: Colors.red.withOpacity(0.8),
                   alignment: Alignment.centerRight,
                   padding: const EdgeInsets.only(right: 20),
                   child: const Icon(Icons.delete, color: Colors.white),
                 ),
-                onDismissed: (_) {
-                  ref.read(todoControllerProvider.notifier).deleteTodo(item.id);
+                confirmDismiss: (direction) async {
+                  if (direction == DismissDirection.startToEnd) {
+                    _showEditDialog(context, ref, item);
+                    return false;
+                  }
+                  return true;
+                },
+                onDismissed: (direction) {
+                  if (direction == DismissDirection.endToStart) {
+                    ref.read(todoControllerProvider.notifier).deleteTodo(item.id);
+                  }
                 },
                 child: CheckboxListTile(
                   value: item.isCompleted,
@@ -157,6 +173,90 @@ class TodoScreen extends ConsumerWidget {
                     }
                   },
                   child: const Text('ADD'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _showEditDialog(BuildContext context, WidgetRef ref, TodoItem item) async {
+    final titleController = TextEditingController(text: item.title);
+    DateTime? selectedDeadline = item.deadline;
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Edit Task'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: titleController,
+                    decoration: const InputDecoration(labelText: 'Task Title'),
+                    autofocus: true,
+                  ),
+                  const SizedBox(height: 16),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Deadline (Optional)'),
+                    subtitle: Text(
+                      selectedDeadline == null
+                          ? 'None'
+                          : DateFormat('MMM dd, yyyy - h:mm a').format(selectedDeadline!),
+                      style: TextStyle(
+                          color: selectedDeadline != null ? Colors.blueAccent : Colors.grey),
+                    ),
+                    trailing: const Icon(Icons.calendar_today),
+                    onTap: () async {
+                      final date = await showDatePicker(
+                        context: context,
+                        initialDate: selectedDeadline ?? DateTime.now(),
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now().add(const Duration(days: 3650)),
+                      );
+                      if (date != null) {
+                        final time = await showTimePicker(
+                          context: context,
+                          initialTime: selectedDeadline != null 
+                              ? TimeOfDay.fromDateTime(selectedDeadline!) 
+                              : TimeOfDay.now(),
+                        );
+                        if (time != null) {
+                          setState(() {
+                            selectedDeadline = DateTime(
+                              date.year,
+                              date.month,
+                              date.day,
+                              time.hour,
+                              time.minute,
+                            );
+                          });
+                        }
+                      }
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('CANCEL'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    final title = titleController.text.trim();
+                    if (title.isNotEmpty) {
+                      ref.read(todoControllerProvider.notifier).editTodo(item.id, title, selectedDeadline);
+                      Navigator.of(context).pop();
+                    }
+                  },
+                  child: const Text('SAVE'),
                 ),
               ],
             );

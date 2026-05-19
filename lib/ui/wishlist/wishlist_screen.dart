@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/providers/wishlist_providers.dart';
+import '../../data/models/wishlist_item.dart';
 
 class WishlistScreen extends ConsumerWidget {
   const WishlistScreen({super.key});
@@ -31,15 +32,30 @@ class WishlistScreen extends ConsumerWidget {
               final item = items[index];
               return Dismissible(
                 key: ValueKey(item.id),
-                direction: DismissDirection.endToStart,
+                direction: DismissDirection.horizontal,
                 background: Container(
+                  color: Colors.green.withOpacity(0.8),
+                  alignment: Alignment.centerLeft,
+                  padding: const EdgeInsets.only(left: 20),
+                  child: const Icon(Icons.edit, color: Colors.white),
+                ),
+                secondaryBackground: Container(
                   color: Colors.red.withOpacity(0.8),
                   alignment: Alignment.centerRight,
                   padding: const EdgeInsets.only(right: 20),
                   child: const Icon(Icons.delete, color: Colors.white),
                 ),
-                onDismissed: (_) {
-                  ref.read(wishlistControllerProvider.notifier).deleteItem(item.id);
+                confirmDismiss: (direction) async {
+                  if (direction == DismissDirection.startToEnd) {
+                    _showEditDialog(context, ref, item);
+                    return false;
+                  }
+                  return true;
+                },
+                onDismissed: (direction) {
+                  if (direction == DismissDirection.endToStart) {
+                    ref.read(wishlistControllerProvider.notifier).deleteItem(item.id);
+                  }
                 },
                 child: ListTile(
                   title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -110,6 +126,56 @@ class WishlistScreen extends ConsumerWidget {
                 }
               },
               child: const Text('ADD'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showEditDialog(BuildContext context, WidgetRef ref, WishlistItem item) async {
+    final nameController = TextEditingController(text: item.name);
+    final costController = TextEditingController(text: item.estimatedCost.toString());
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Edit Wishlist Item'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(labelText: 'Item Name'),
+                autofocus: true,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: costController,
+                decoration: const InputDecoration(labelText: 'Estimated Cost'),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('CANCEL'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final name = nameController.text.trim();
+                final costStr = costController.text.trim();
+                if (name.isNotEmpty && costStr.isNotEmpty) {
+                  final cost = double.tryParse(costStr);
+                  if (cost != null) {
+                    ref.read(wishlistControllerProvider.notifier).editItem(item.id, name, cost);
+                    Navigator.of(context).pop();
+                  }
+                }
+              },
+              child: const Text('SAVE'),
             ),
           ],
         );

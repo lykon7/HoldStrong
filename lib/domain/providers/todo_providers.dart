@@ -76,6 +76,23 @@ class TodoNotifier extends StateNotifier<AsyncValue<void>> {
       state = AsyncError(e, st);
     }
   }
+
+  Future<void> editTodo(Id id, String title, DateTime? deadline) async {
+    state = const AsyncLoading();
+    try {
+      await _isar.writeTxn(() async {
+        final item = await _isar.todoItems.get(id);
+        if (item != null) {
+          item.title = title;
+          item.deadline = deadline;
+          await _isar.todoItems.put(item);
+        }
+      });
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+    }
+  }
 }
 
 final todoControllerProvider = StateNotifierProvider<TodoNotifier, AsyncValue<void>>((ref) {

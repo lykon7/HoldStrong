@@ -116,43 +116,56 @@ class JournalScreen extends ConsumerWidget {
                   ? '${entry.content.substring(0, 100)}...' 
                   : entry.content;
 
-              return InkWell(
-                onTap: () {
-                  final dateStr = DateFormat('yyyy-MM-dd').format(entry.date);
-                  context.push('/journal/$dateStr');
+              return Dismissible(
+                key: ValueKey(entry.uuid),
+                direction: DismissDirection.endToStart,
+                background: Container(
+                  color: Colors.red.withOpacity(0.8),
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.only(right: 20),
+                  child: const Icon(Icons.delete, color: Colors.white),
+                ),
+                onDismissed: (_) {
+                  ref.read(journalRepositoryProvider).deleteEntry(entry.uuid);
                 },
-                borderRadius: BorderRadius.circular(4),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.backgroundElevated,
-                    border: Border.all(color: AppColors.cardBorder),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        dateFmt.format(entry.date).toUpperCase(),
-                        style: const TextStyle(
-                          fontFamily: 'IBMPlexMono',
-                          fontSize: 10,
-                          letterSpacing: 1.5,
-                          color: AppColors.accentGold,
+                child: InkWell(
+                  onTap: () {
+                    final dateStr = DateFormat('yyyy-MM-dd').format(entry.date);
+                    context.push('/journal/$dateStr');
+                  },
+                  borderRadius: BorderRadius.circular(4),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.backgroundElevated,
+                      border: Border.all(color: AppColors.cardBorder),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          dateFmt.format(entry.date).toUpperCase(),
+                          style: const TextStyle(
+                            fontFamily: 'IBMPlexMono',
+                            fontSize: 10,
+                            letterSpacing: 1.5,
+                            color: AppColors.accentGold,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        preview,
-                        style: const TextStyle(
-                          fontFamily: 'Rajdhani',
-                          fontSize: 16,
-                          color: AppColors.textPrimary,
+                        const SizedBox(height: 8),
+                        Text(
+                          preview,
+                          style: const TextStyle(
+                            fontFamily: 'Rajdhani',
+                            fontSize: 16,
+                            color: AppColors.textPrimary,
+                          ),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               );

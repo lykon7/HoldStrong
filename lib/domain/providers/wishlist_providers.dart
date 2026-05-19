@@ -41,6 +41,23 @@ class WishlistNotifier extends StateNotifier<AsyncValue<void>> {
       state = AsyncError(e, st);
     }
   }
+
+  Future<void> editItem(Id id, String name, double cost) async {
+    state = const AsyncLoading();
+    try {
+      await _isar.writeTxn(() async {
+        final item = await _isar.wishlistItems.get(id);
+        if (item != null) {
+          item.name = name;
+          item.estimatedCost = cost;
+          await _isar.wishlistItems.put(item);
+        }
+      });
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+    }
+  }
 }
 
 final wishlistControllerProvider = StateNotifierProvider<WishlistNotifier, AsyncValue<void>>((ref) {
