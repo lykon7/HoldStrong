@@ -8,6 +8,7 @@ import '../../domain/providers/expense_providers.dart';
 import 'widgets/goal_progress_card.dart';
 import 'widgets/held_button.dart';
 import 'widgets/net_week_graph.dart';
+import 'widgets/hub_shortcuts.dart';
 import 'widgets/recent_feed.dart';
 import '../../core/theme.dart';
 
@@ -59,6 +60,8 @@ class HomeScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 NetWeekGraph(incomes: incomes, expenses: expenses),
+                const SizedBox(height: 16),
+                const HubShortcuts(),
                 const SizedBox(height: 16),
                 // Goal progress card — fills available space
                 Expanded(
