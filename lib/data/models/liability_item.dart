@@ -72,11 +72,15 @@ class LiabilityItem {
   /// Stored as int — index of [LiabilityFrequency]. Null if not recurring.
   int? recurrenceFrequency;
 
-  /// BNPL: total number of instalments. Null for non-BNPL types.
+  /// BNPL: total number of instalments in this group. Set on every entry in the group.
   int? totalInstalments;
 
-  /// BNPL: how many instalments have been paid so far.
-  int instalmentsPaid = 0;
+  /// BNPL: which instalment this entry represents (1-based).
+  int? instalmentNumber;
+
+  /// BNPL: shared UUID linking all instalment entries of the same BNPL.
+  @Index()
+  String? groupUuid;
 
   /// Whether the liability is fully settled (BNPL paid in full, or deleted).
   bool isArchived = false;

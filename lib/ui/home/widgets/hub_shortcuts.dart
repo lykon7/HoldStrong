@@ -42,10 +42,17 @@ class HubShortcuts extends StatelessWidget {
             ),
             _buildShortcut(
               context,
+              title: 'Liabilities',
+              icon: Icons.receipt_long,
+              color: AppColors.accentGold,
+              route: '/hub/liabilities',
+            ),
+            _buildShortcut(
+              context,
               title: 'More',
               icon: Icons.more_horiz,
               color: AppColors.accentGold,
-              route: null,
+              route: '/hub',
             ),
         ],
       ),

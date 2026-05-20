@@ -32,53 +32,58 @@ const LiabilityItemSchema = CollectionSchema(
       name: r'dueDate',
       type: IsarType.dateTime,
     ),
-    r'instalmentsPaid': PropertySchema(
+    r'groupUuid': PropertySchema(
       id: 3,
-      name: r'instalmentsPaid',
+      name: r'groupUuid',
+      type: IsarType.string,
+    ),
+    r'instalmentNumber': PropertySchema(
+      id: 4,
+      name: r'instalmentNumber',
       type: IsarType.long,
     ),
     r'isArchived': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'isArchived',
       type: IsarType.bool,
     ),
     r'isPaid': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'isPaid',
       type: IsarType.bool,
     ),
     r'isRecurring': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'isRecurring',
       type: IsarType.bool,
     ),
     r'notes': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'notes',
       type: IsarType.string,
     ),
     r'recurrenceFrequency': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'recurrenceFrequency',
       type: IsarType.long,
     ),
     r'title': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'title',
       type: IsarType.string,
     ),
     r'totalInstalments': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'totalInstalments',
       type: IsarType.long,
     ),
     r'type': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'type',
       type: IsarType.long,
     ),
     r'uuid': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'uuid',
       type: IsarType.string,
     )
@@ -115,6 +120,19 @@ const LiabilityItemSchema = CollectionSchema(
         )
       ],
     ),
+    r'groupUuid': IndexSchema(
+      id: -2052044535853084997,
+      name: r'groupUuid',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'groupUuid',
+          type: IndexType.hash,
+          caseSensitive: true,
+        )
+      ],
+    ),
     r'createdAt': IndexSchema(
       id: -3433535483987302584,
       name: r'createdAt',
@@ -144,6 +162,12 @@ int _liabilityItemEstimateSize(
 ) {
   var bytesCount = offsets.last;
   {
+    final value = object.groupUuid;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.notes;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -163,16 +187,17 @@ void _liabilityItemSerialize(
   writer.writeDouble(offsets[0], object.amount);
   writer.writeDateTime(offsets[1], object.createdAt);
   writer.writeDateTime(offsets[2], object.dueDate);
-  writer.writeLong(offsets[3], object.instalmentsPaid);
-  writer.writeBool(offsets[4], object.isArchived);
-  writer.writeBool(offsets[5], object.isPaid);
-  writer.writeBool(offsets[6], object.isRecurring);
-  writer.writeString(offsets[7], object.notes);
-  writer.writeLong(offsets[8], object.recurrenceFrequency);
-  writer.writeString(offsets[9], object.title);
-  writer.writeLong(offsets[10], object.totalInstalments);
-  writer.writeLong(offsets[11], object.type);
-  writer.writeString(offsets[12], object.uuid);
+  writer.writeString(offsets[3], object.groupUuid);
+  writer.writeLong(offsets[4], object.instalmentNumber);
+  writer.writeBool(offsets[5], object.isArchived);
+  writer.writeBool(offsets[6], object.isPaid);
+  writer.writeBool(offsets[7], object.isRecurring);
+  writer.writeString(offsets[8], object.notes);
+  writer.writeLong(offsets[9], object.recurrenceFrequency);
+  writer.writeString(offsets[10], object.title);
+  writer.writeLong(offsets[11], object.totalInstalments);
+  writer.writeLong(offsets[12], object.type);
+  writer.writeString(offsets[13], object.uuid);
 }
 
 LiabilityItem _liabilityItemDeserialize(
@@ -185,17 +210,18 @@ LiabilityItem _liabilityItemDeserialize(
   object.amount = reader.readDouble(offsets[0]);
   object.createdAt = reader.readDateTime(offsets[1]);
   object.dueDate = reader.readDateTime(offsets[2]);
+  object.groupUuid = reader.readStringOrNull(offsets[3]);
   object.id = id;
-  object.instalmentsPaid = reader.readLong(offsets[3]);
-  object.isArchived = reader.readBool(offsets[4]);
-  object.isPaid = reader.readBool(offsets[5]);
-  object.isRecurring = reader.readBool(offsets[6]);
-  object.notes = reader.readStringOrNull(offsets[7]);
-  object.recurrenceFrequency = reader.readLongOrNull(offsets[8]);
-  object.title = reader.readString(offsets[9]);
-  object.totalInstalments = reader.readLongOrNull(offsets[10]);
-  object.type = reader.readLong(offsets[11]);
-  object.uuid = reader.readString(offsets[12]);
+  object.instalmentNumber = reader.readLongOrNull(offsets[4]);
+  object.isArchived = reader.readBool(offsets[5]);
+  object.isPaid = reader.readBool(offsets[6]);
+  object.isRecurring = reader.readBool(offsets[7]);
+  object.notes = reader.readStringOrNull(offsets[8]);
+  object.recurrenceFrequency = reader.readLongOrNull(offsets[9]);
+  object.title = reader.readString(offsets[10]);
+  object.totalInstalments = reader.readLongOrNull(offsets[11]);
+  object.type = reader.readLong(offsets[12]);
+  object.uuid = reader.readString(offsets[13]);
   return object;
 }
 
@@ -213,24 +239,26 @@ P _liabilityItemDeserializeProp<P>(
     case 2:
       return (reader.readDateTime(offset)) as P;
     case 3:
-      return (reader.readLong(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 4:
-      return (reader.readBool(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 5:
       return (reader.readBool(offset)) as P;
     case 6:
       return (reader.readBool(offset)) as P;
     case 7:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 8:
-      return (reader.readLongOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 9:
-      return (reader.readString(offset)) as P;
-    case 10:
       return (reader.readLongOrNull(offset)) as P;
+    case 10:
+      return (reader.readString(offset)) as P;
     case 11:
-      return (reader.readLong(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 12:
+      return (reader.readLong(offset)) as P;
+    case 13:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -538,6 +566,73 @@ extension LiabilityItemQueryWhere
   }
 
   QueryBuilder<LiabilityItem, LiabilityItem, QAfterWhereClause>
+      groupUuidIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'groupUuid',
+        value: [null],
+      ));
+    });
+  }
+
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterWhereClause>
+      groupUuidIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'groupUuid',
+        lower: [null],
+        includeLower: false,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterWhereClause>
+      groupUuidEqualTo(String? groupUuid) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'groupUuid',
+        value: [groupUuid],
+      ));
+    });
+  }
+
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterWhereClause>
+      groupUuidNotEqualTo(String? groupUuid) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'groupUuid',
+              lower: [],
+              upper: [groupUuid],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'groupUuid',
+              lower: [groupUuid],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'groupUuid',
+              lower: [groupUuid],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'groupUuid',
+              lower: [],
+              upper: [groupUuid],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterWhereClause>
       createdAtEqualTo(DateTime createdAt) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(IndexWhereClause.equalTo(
@@ -811,6 +906,160 @@ extension LiabilityItemQueryFilter
     });
   }
 
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterFilterCondition>
+      groupUuidIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'groupUuid',
+      ));
+    });
+  }
+
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterFilterCondition>
+      groupUuidIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'groupUuid',
+      ));
+    });
+  }
+
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterFilterCondition>
+      groupUuidEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'groupUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterFilterCondition>
+      groupUuidGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'groupUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterFilterCondition>
+      groupUuidLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'groupUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterFilterCondition>
+      groupUuidBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'groupUuid',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterFilterCondition>
+      groupUuidStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'groupUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterFilterCondition>
+      groupUuidEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'groupUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterFilterCondition>
+      groupUuidContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'groupUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterFilterCondition>
+      groupUuidMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'groupUuid',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterFilterCondition>
+      groupUuidIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'groupUuid',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterFilterCondition>
+      groupUuidIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'groupUuid',
+        value: '',
+      ));
+    });
+  }
+
   QueryBuilder<LiabilityItem, LiabilityItem, QAfterFilterCondition> idEqualTo(
       Id value) {
     return QueryBuilder.apply(this, (query) {
@@ -866,53 +1115,71 @@ extension LiabilityItemQueryFilter
   }
 
   QueryBuilder<LiabilityItem, LiabilityItem, QAfterFilterCondition>
-      instalmentsPaidEqualTo(int value) {
+      instalmentNumberIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'instalmentNumber',
+      ));
+    });
+  }
+
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterFilterCondition>
+      instalmentNumberIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'instalmentNumber',
+      ));
+    });
+  }
+
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterFilterCondition>
+      instalmentNumberEqualTo(int? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'instalmentsPaid',
+        property: r'instalmentNumber',
         value: value,
       ));
     });
   }
 
   QueryBuilder<LiabilityItem, LiabilityItem, QAfterFilterCondition>
-      instalmentsPaidGreaterThan(
-    int value, {
+      instalmentNumberGreaterThan(
+    int? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         include: include,
-        property: r'instalmentsPaid',
+        property: r'instalmentNumber',
         value: value,
       ));
     });
   }
 
   QueryBuilder<LiabilityItem, LiabilityItem, QAfterFilterCondition>
-      instalmentsPaidLessThan(
-    int value, {
+      instalmentNumberLessThan(
+    int? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.lessThan(
         include: include,
-        property: r'instalmentsPaid',
+        property: r'instalmentNumber',
         value: value,
       ));
     });
   }
 
   QueryBuilder<LiabilityItem, LiabilityItem, QAfterFilterCondition>
-      instalmentsPaidBetween(
-    int lower,
-    int upper, {
+      instalmentNumberBetween(
+    int? lower,
+    int? upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
-        property: r'instalmentsPaid',
+        property: r'instalmentNumber',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -1625,17 +1892,30 @@ extension LiabilityItemQuerySortBy
     });
   }
 
-  QueryBuilder<LiabilityItem, LiabilityItem, QAfterSortBy>
-      sortByInstalmentsPaid() {
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterSortBy> sortByGroupUuid() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'instalmentsPaid', Sort.asc);
+      return query.addSortBy(r'groupUuid', Sort.asc);
     });
   }
 
   QueryBuilder<LiabilityItem, LiabilityItem, QAfterSortBy>
-      sortByInstalmentsPaidDesc() {
+      sortByGroupUuidDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'instalmentsPaid', Sort.desc);
+      return query.addSortBy(r'groupUuid', Sort.desc);
+    });
+  }
+
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterSortBy>
+      sortByInstalmentNumber() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'instalmentNumber', Sort.asc);
+    });
+  }
+
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterSortBy>
+      sortByInstalmentNumberDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'instalmentNumber', Sort.desc);
     });
   }
 
@@ -1793,6 +2073,19 @@ extension LiabilityItemQuerySortThenBy
     });
   }
 
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterSortBy> thenByGroupUuid() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'groupUuid', Sort.asc);
+    });
+  }
+
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterSortBy>
+      thenByGroupUuidDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'groupUuid', Sort.desc);
+    });
+  }
+
   QueryBuilder<LiabilityItem, LiabilityItem, QAfterSortBy> thenById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
@@ -1806,16 +2099,16 @@ extension LiabilityItemQuerySortThenBy
   }
 
   QueryBuilder<LiabilityItem, LiabilityItem, QAfterSortBy>
-      thenByInstalmentsPaid() {
+      thenByInstalmentNumber() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'instalmentsPaid', Sort.asc);
+      return query.addSortBy(r'instalmentNumber', Sort.asc);
     });
   }
 
   QueryBuilder<LiabilityItem, LiabilityItem, QAfterSortBy>
-      thenByInstalmentsPaidDesc() {
+      thenByInstalmentNumberDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'instalmentsPaid', Sort.desc);
+      return query.addSortBy(r'instalmentNumber', Sort.desc);
     });
   }
 
@@ -1954,10 +2247,17 @@ extension LiabilityItemQueryWhereDistinct
     });
   }
 
-  QueryBuilder<LiabilityItem, LiabilityItem, QDistinct>
-      distinctByInstalmentsPaid() {
+  QueryBuilder<LiabilityItem, LiabilityItem, QDistinct> distinctByGroupUuid(
+      {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'instalmentsPaid');
+      return query.addDistinctBy(r'groupUuid', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<LiabilityItem, LiabilityItem, QDistinct>
+      distinctByInstalmentNumber() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'instalmentNumber');
     });
   }
 
@@ -2048,9 +2348,16 @@ extension LiabilityItemQueryProperty
     });
   }
 
-  QueryBuilder<LiabilityItem, int, QQueryOperations> instalmentsPaidProperty() {
+  QueryBuilder<LiabilityItem, String?, QQueryOperations> groupUuidProperty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'instalmentsPaid');
+      return query.addPropertyName(r'groupUuid');
+    });
+  }
+
+  QueryBuilder<LiabilityItem, int?, QQueryOperations>
+      instalmentNumberProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'instalmentNumber');
     });
   }
 

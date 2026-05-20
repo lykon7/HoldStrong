@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:isar/isar.dart';
+
 import '../../data/models/liability_item.dart';
 import '../../data/repositories/liability_repository.dart';
 import 'goal_providers.dart'; // exposes isarProvider
@@ -33,6 +33,31 @@ class LiabilityNotifier extends StateNotifier<AsyncValue<void>> {
     state = const AsyncLoading();
     try {
       await _repo.save(item);
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+    }
+  }
+
+  /// Creates N individual instalment entries for a BNPL liability.
+  Future<void> addBnplInstalments({
+    required String title,
+    required double amount,
+    required DateTime startDate,
+    required int count,
+    required LiabilityFrequency frequency,
+    String? notes,
+  }) async {
+    state = const AsyncLoading();
+    try {
+      await _repo.saveBnplInstalments(
+        title: title,
+        amount: amount,
+        startDate: startDate,
+        count: count,
+        frequency: frequency,
+        notes: notes,
+      );
       state = const AsyncData(null);
     } catch (e, st) {
       state = AsyncError(e, st);
@@ -76,8 +101,20 @@ final liabilityControllerProvider =
 });
 
 // ---------------------------------------------------------------------------
-// Derived providers
+// Derived: totals
 // ---------------------------------------------------------------------------
+
+/// Total amount of all unpaid liabilities across ALL time (every future entry).
+final totalOutstandingLiabilityProvider = Provider<double>((ref) {
+  final async = ref.watch(allLiabilitiesProvider);
+  return async.when(
+    data: (items) => items
+        .where((i) => !i.isPaid)
+        .fold(0.0, (sum, i) => sum + i.amount),
+    loading: () => 0.0,
+    error: (_, __) => 0.0,
+  );
+});
 
 /// Total amount of unpaid liabilities due this calendar month.
 final monthlyLiabilityTotalProvider = Provider<double>((ref) {
@@ -97,23 +134,25 @@ final monthlyLiabilityTotalProvider = Provider<double>((ref) {
   );
 });
 
-/// Liabilities that are overdue (due date in the past, not paid).
+// ---------------------------------------------------------------------------
+// Derived: sections
+// ---------------------------------------------------------------------------
+
+/// Liabilities that are overdue (due date before today, not paid).
 final overdueProvider = Provider<List<LiabilityItem>>((ref) {
   final async = ref.watch(allLiabilitiesProvider);
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
   return async.when(
-    data: (items) => items
-        .where((i) =>
-            !i.isPaid && i.dueDate.isBefore(today))
-        .toList(),
+    data: (items) =>
+        items.where((i) => !i.isPaid && i.dueDate.isBefore(today)).toList(),
     loading: () => [],
     error: (_, __) => [],
   );
 });
 
-/// Liabilities due within the next 7 days (and not overdue).
-final dueSoonProvider = Provider<List<LiabilityItem>>((ref) {
+/// Liabilities due within the next 7 days (inclusive of today, not overdue).
+final dueThisWeekProvider = Provider<List<LiabilityItem>>((ref) {
   final async = ref.watch(allLiabilitiesProvider);
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
@@ -130,15 +169,34 @@ final dueSoonProvider = Provider<List<LiabilityItem>>((ref) {
   );
 });
 
-/// Liabilities due beyond 7 days from today.
+/// Liabilities due between day 8 and day 30 from today.
+final dueThisMonthProvider = Provider<List<LiabilityItem>>((ref) {
+  final async = ref.watch(allLiabilitiesProvider);
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final in7 = today.add(const Duration(days: 7));
+  final in30 = today.add(const Duration(days: 30));
+  return async.when(
+    data: (items) => items
+        .where((i) =>
+            !i.isPaid &&
+            i.dueDate.isAfter(in7) &&
+            !i.dueDate.isAfter(in30))
+        .toList(),
+    loading: () => [],
+    error: (_, __) => [],
+  );
+});
+
+/// Liabilities due beyond 30 days from today.
 final upcomingProvider = Provider<List<LiabilityItem>>((ref) {
   final async = ref.watch(allLiabilitiesProvider);
   final now = DateTime.now();
-  final in7 = DateTime(now.year, now.month, now.day).add(const Duration(days: 7));
+  final today = DateTime(now.year, now.month, now.day);
+  final in30 = today.add(const Duration(days: 30));
   return async.when(
-    data: (items) => items
-        .where((i) => !i.isPaid && i.dueDate.isAfter(in7))
-        .toList(),
+    data: (items) =>
+        items.where((i) => !i.isPaid && i.dueDate.isAfter(in30)).toList(),
     loading: () => [],
     error: (_, __) => [],
   );

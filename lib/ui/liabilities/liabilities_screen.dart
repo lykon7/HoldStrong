@@ -12,9 +12,11 @@ class LiabilitiesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final overdue = ref.watch(overdueProvider);
-    final dueSoon = ref.watch(dueSoonProvider);
+    final dueThisWeek = ref.watch(dueThisWeekProvider);
+    final dueThisMonth = ref.watch(dueThisMonthProvider);
     final upcoming = ref.watch(upcomingProvider);
     final monthlyTotal = ref.watch(monthlyLiabilityTotalProvider);
+    final totalOutstanding = ref.watch(totalOutstandingLiabilityProvider);
     final allAsync = ref.watch(allLiabilitiesProvider);
 
     return Scaffold(
@@ -31,12 +33,18 @@ class LiabilitiesScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (_) {
-          final hasAny = overdue.isNotEmpty || dueSoon.isNotEmpty || upcoming.isNotEmpty;
+          final hasAny = overdue.isNotEmpty ||
+              dueThisWeek.isNotEmpty ||
+              dueThisMonth.isNotEmpty ||
+              upcoming.isNotEmpty;
           return CustomScrollView(
             slivers: [
               // ── Header summary card ───────────────────────────────────
               SliverToBoxAdapter(
-                child: _SummaryHeader(monthlyTotal: monthlyTotal),
+                child: _SummaryHeader(
+                  monthlyTotal: monthlyTotal,
+                  totalOutstanding: totalOutstanding,
+                ),
               ),
               if (!hasAny)
                 const SliverFillRemaining(
@@ -66,14 +74,19 @@ class LiabilitiesScreen extends ConsumerWidget {
                     label: 'OVERDUE', color: AppColors.destructive),
                 _LiabilityList(items: overdue, ref: ref),
               ],
-              if (dueSoon.isNotEmpty) ...[
+              if (dueThisWeek.isNotEmpty) ...[
                 _SectionHeader(
                     label: 'DUE THIS WEEK', color: AppColors.accentGold),
-                _LiabilityList(items: dueSoon, ref: ref),
+                _LiabilityList(items: dueThisWeek, ref: ref),
+              ],
+              if (dueThisMonth.isNotEmpty) ...[
+                _SectionHeader(
+                    label: 'DUE THIS MONTH', color: const Color(0xFF7C83FD)),
+                _LiabilityList(items: dueThisMonth, ref: ref),
               ],
               if (upcoming.isNotEmpty) ...[
                 _SectionHeader(
-                    label: 'UPCOMING',
+                    label: 'LATER',
                     color: const Color(0xFF4CAF82)),
                 _LiabilityList(items: upcoming, ref: ref),
               ],
@@ -81,10 +94,6 @@ class LiabilitiesScreen extends ConsumerWidget {
             ],
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddSheet(context, ref),
-        child: const Icon(Icons.add),
       ),
     );
   }
@@ -318,11 +327,12 @@ class _LiabilityTile extends ConsumerWidget {
                   ),
                 ],
               ),
-              if (isBnpl && (item.totalInstalments ?? 0) > 0) ...[
-                const SizedBox(height: 10),
-                _BnplProgress(
-                    paid: item.instalmentsPaid,
-                    total: item.totalInstalments!),
+              if (isBnpl && item.instalmentNumber != null) ...[
+                const SizedBox(height: 8),
+                _InstalmentBadge(
+                  number: item.instalmentNumber!,
+                  total: item.totalInstalments ?? item.instalmentNumber!,
+                ),
               ],
               if (item.notes != null && item.notes!.isNotEmpty) ...[
                 const SizedBox(height: 8),
@@ -382,31 +392,39 @@ class _TypeIcon extends StatelessWidget {
   }
 }
 
-// ── BNPL progress bar ────────────────────────────────────────────────────────
+// ── BNPL instalment badge ─────────────────────────────────────────────────────
 
-class _BnplProgress extends StatelessWidget {
-  final int paid;
+class _InstalmentBadge extends StatelessWidget {
+  final int number;
   final int total;
-  const _BnplProgress({required this.paid, required this.total});
+  const _InstalmentBadge({required this.number, required this.total});
 
   @override
   Widget build(BuildContext context) {
-    final pct = (paid / total).clamp(0.0, 1.0);
+    final pct = (number / total).clamp(0.0, 1.0);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('INSTALMENTS',
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xFF7C83FD).withOpacity(0.15),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(
+                    color: const Color(0xFF7C83FD).withOpacity(0.4)),
+              ),
+              child: Text(
+                'INSTALMENT $number of $total',
                 style: const TextStyle(
-                    fontSize: 10,
-                    letterSpacing: 1.5,
-                    color: AppColors.textSecondary)),
-            Text('$paid / $total',
-                style: const TextStyle(
-                    fontSize: 10,
-                    color: AppColors.textSecondary)),
+                  fontSize: 10,
+                  letterSpacing: 1,
+                  color: Color(0xFF7C83FD),
+                  fontFamily: 'IBMPlexMono',
+                ),
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 6),
@@ -414,10 +432,9 @@ class _BnplProgress extends StatelessWidget {
           borderRadius: BorderRadius.circular(4),
           child: LinearProgressIndicator(
             value: pct,
-            minHeight: 6,
+            minHeight: 4,
             backgroundColor: AppColors.cardBorder,
-            valueColor: const AlwaysStoppedAnimation<Color>(
-                Color(0xFF7C83FD)),
+            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF7C83FD)),
           ),
         ),
       ],
@@ -429,7 +446,11 @@ class _BnplProgress extends StatelessWidget {
 
 class _SummaryHeader extends StatelessWidget {
   final double monthlyTotal;
-  const _SummaryHeader({required this.monthlyTotal});
+  final double totalOutstanding;
+  const _SummaryHeader({
+    required this.monthlyTotal,
+    required this.totalOutstanding,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -448,24 +469,15 @@ class _SummaryHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF7C83FD).withOpacity(0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.receipt_long,
-                color: Color(0xFF7C83FD), size: 28),
-          ),
-          const SizedBox(width: 16),
+          // Monthly column
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('DUE IN $month'.toUpperCase(),
                     style: const TextStyle(
-                        fontSize: 11,
-                        letterSpacing: 2,
+                        fontSize: 10,
+                        letterSpacing: 1.5,
                         color: AppColors.textSecondary)),
                 const SizedBox(height: 4),
                 Text(
@@ -473,13 +485,44 @@ class _SummaryHeader extends StatelessWidget {
                   style: const TextStyle(
                     fontFamily: 'Rajdhani',
                     fontWeight: FontWeight.w700,
-                    fontSize: 28,
+                    fontSize: 22,
                     letterSpacing: 1,
                     color: Color(0xFF7C83FD),
                   ),
                 ),
               ],
             ),
+          ),
+          // Divider
+          Container(
+            width: 1,
+            height: 44,
+            color: const Color(0xFF7C83FD).withOpacity(0.2),
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+          ),
+          // Total outstanding column
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              const Text('TOTAL DUE',
+                  style: TextStyle(
+                      fontSize: 10,
+                      letterSpacing: 1.5,
+                      color: AppColors.textSecondary)),
+              const SizedBox(height: 4),
+              Text(
+                'LKR ${totalOutstanding.toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontFamily: 'Rajdhani',
+                  fontWeight: FontWeight.w700,
+                  fontSize: 22,
+                  letterSpacing: 1,
+                  color: totalOutstanding > 0
+                      ? AppColors.destructive
+                      : const Color(0xFF4CAF82),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -557,21 +600,35 @@ class _LiabilityFormState extends State<_LiabilityForm> {
     final amount = double.tryParse(_amountCtrl.text.trim());
     if (title.isEmpty || amount == null) return;
 
+    final notifier = widget.ref.read(liabilityControllerProvider.notifier);
+
+    // ── BNPL: new entry → create N individual instalment entries ──────────
+    if (_isBnpl && !_isEdit) {
+      final count = int.tryParse(_totalInstCtrl.text.trim()) ?? 1;
+      notifier.addBnplInstalments(
+        title: title,
+        amount: amount,
+        startDate: _dueDate,
+        count: count,
+        frequency: _frequency,
+        notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+      );
+      Navigator.of(context).pop();
+      return;
+    }
+
+    // ── All other cases (non-BNPL new, or editing any single entry) ───────
     final item = widget.existing ?? (LiabilityItem()..uuid = const Uuid().v4());
     item
       ..title = title
       ..amount = amount
       ..type = _type.index
       ..dueDate = _dueDate
-      ..isRecurring = _isBnpl ? true : _isRecurring
-      ..recurrenceFrequency = (_isRecurring || _isBnpl) ? _frequency.index : null
-      ..totalInstalments = _isBnpl
-          ? (int.tryParse(_totalInstCtrl.text.trim()))
-          : null
+      ..isRecurring = _isRecurring
+      ..recurrenceFrequency = _isRecurring ? _frequency.index : null
       ..notes = _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim()
       ..createdAt = widget.existing?.createdAt ?? DateTime.now();
 
-    final notifier = widget.ref.read(liabilityControllerProvider.notifier);
     if (_isEdit) {
       notifier.edit(item);
     } else {
