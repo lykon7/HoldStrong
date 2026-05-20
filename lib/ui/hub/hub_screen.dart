@@ -41,7 +41,12 @@ class HubScreen extends StatelessWidget {
               color: Colors.teal,
               onTap: () => context.push('/hub/todo'),
             ),
-            // We can easily add more features here later
+            _HubCard(
+              title: 'Liabilities',
+              icon: Icons.receipt_long,
+              color: Color(0xFF7C83FD),
+              onTap: () => context.push('/hub/liabilities'),
+            ),
           ],
         ),
       ),
