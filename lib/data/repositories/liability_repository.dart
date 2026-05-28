@@ -68,6 +68,7 @@ class LiabilityRepository {
     required int count,
     required LiabilityFrequency frequency,
     String? notes,
+    String? linkedFundUuid,
   }) async {
     final groupId = _uuid.v4();
     final now = DateTime.now();
@@ -89,6 +90,7 @@ class LiabilityRepository {
           ..instalmentNumber = i
           ..groupUuid = groupId
           ..isArchived = false
+          ..linkedFundUuid = linkedFundUuid
           ..createdAt = now;
         await _isar.liabilityItems.put(item);
         due = _advanceDueDate(due, frequency);
@@ -104,6 +106,9 @@ class LiabilityRepository {
   /// - Creates an [ExpenseEntry] in the transaction ledger.
   /// - Archives the item (removes it from the active list).
   /// - For recurring non-BNPL items: advances the due date and keeps active.
+  /// Marks a liability as paid.
+  /// Logs an [ExpenseEntry] using the item's [linkedFundUuid] so the
+  /// correct fund account balance is automatically deducted.
   Future<void> markPaid(String uuid) async {
     await _isar.writeTxn(() async {
       final item = await _isar.liabilityItems
@@ -112,12 +117,12 @@ class LiabilityRepository {
           .findFirst();
       if (item == null) return;
 
-      // Always log to expense ledger.
+      // Log to expense ledger — link to the fund account if one is set.
       final expense = ExpenseEntry()
         ..uuid = _uuid.v4()
         ..amount = item.amount
         ..purpose = item.title
-        ..fundUuid = null
+        ..fundUuid = item.linkedFundUuid  // ← deducts from linked account
         ..loggedAt = DateTime.now();
       await _isar.expenseEntrys.put(expense);
 

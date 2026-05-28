@@ -57,33 +57,38 @@ const LiabilityItemSchema = CollectionSchema(
       name: r'isRecurring',
       type: IsarType.bool,
     ),
-    r'notes': PropertySchema(
+    r'linkedFundUuid': PropertySchema(
       id: 8,
+      name: r'linkedFundUuid',
+      type: IsarType.string,
+    ),
+    r'notes': PropertySchema(
+      id: 9,
       name: r'notes',
       type: IsarType.string,
     ),
     r'recurrenceFrequency': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'recurrenceFrequency',
       type: IsarType.long,
     ),
     r'title': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'title',
       type: IsarType.string,
     ),
     r'totalInstalments': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'totalInstalments',
       type: IsarType.long,
     ),
     r'type': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'type',
       type: IsarType.long,
     ),
     r'uuid': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'uuid',
       type: IsarType.string,
     )
@@ -168,6 +173,12 @@ int _liabilityItemEstimateSize(
     }
   }
   {
+    final value = object.linkedFundUuid;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.notes;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -192,12 +203,13 @@ void _liabilityItemSerialize(
   writer.writeBool(offsets[5], object.isArchived);
   writer.writeBool(offsets[6], object.isPaid);
   writer.writeBool(offsets[7], object.isRecurring);
-  writer.writeString(offsets[8], object.notes);
-  writer.writeLong(offsets[9], object.recurrenceFrequency);
-  writer.writeString(offsets[10], object.title);
-  writer.writeLong(offsets[11], object.totalInstalments);
-  writer.writeLong(offsets[12], object.type);
-  writer.writeString(offsets[13], object.uuid);
+  writer.writeString(offsets[8], object.linkedFundUuid);
+  writer.writeString(offsets[9], object.notes);
+  writer.writeLong(offsets[10], object.recurrenceFrequency);
+  writer.writeString(offsets[11], object.title);
+  writer.writeLong(offsets[12], object.totalInstalments);
+  writer.writeLong(offsets[13], object.type);
+  writer.writeString(offsets[14], object.uuid);
 }
 
 LiabilityItem _liabilityItemDeserialize(
@@ -216,12 +228,13 @@ LiabilityItem _liabilityItemDeserialize(
   object.isArchived = reader.readBool(offsets[5]);
   object.isPaid = reader.readBool(offsets[6]);
   object.isRecurring = reader.readBool(offsets[7]);
-  object.notes = reader.readStringOrNull(offsets[8]);
-  object.recurrenceFrequency = reader.readLongOrNull(offsets[9]);
-  object.title = reader.readString(offsets[10]);
-  object.totalInstalments = reader.readLongOrNull(offsets[11]);
-  object.type = reader.readLong(offsets[12]);
-  object.uuid = reader.readString(offsets[13]);
+  object.linkedFundUuid = reader.readStringOrNull(offsets[8]);
+  object.notes = reader.readStringOrNull(offsets[9]);
+  object.recurrenceFrequency = reader.readLongOrNull(offsets[10]);
+  object.title = reader.readString(offsets[11]);
+  object.totalInstalments = reader.readLongOrNull(offsets[12]);
+  object.type = reader.readLong(offsets[13]);
+  object.uuid = reader.readString(offsets[14]);
   return object;
 }
 
@@ -251,14 +264,16 @@ P _liabilityItemDeserializeProp<P>(
     case 8:
       return (reader.readStringOrNull(offset)) as P;
     case 9:
-      return (reader.readLongOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 10:
-      return (reader.readString(offset)) as P;
-    case 11:
       return (reader.readLongOrNull(offset)) as P;
+    case 11:
+      return (reader.readString(offset)) as P;
     case 12:
-      return (reader.readLong(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 13:
+      return (reader.readLong(offset)) as P;
+    case 14:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1219,6 +1234,160 @@ extension LiabilityItemQueryFilter
   }
 
   QueryBuilder<LiabilityItem, LiabilityItem, QAfterFilterCondition>
+      linkedFundUuidIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'linkedFundUuid',
+      ));
+    });
+  }
+
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterFilterCondition>
+      linkedFundUuidIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'linkedFundUuid',
+      ));
+    });
+  }
+
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterFilterCondition>
+      linkedFundUuidEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'linkedFundUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterFilterCondition>
+      linkedFundUuidGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'linkedFundUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterFilterCondition>
+      linkedFundUuidLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'linkedFundUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterFilterCondition>
+      linkedFundUuidBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'linkedFundUuid',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterFilterCondition>
+      linkedFundUuidStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'linkedFundUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterFilterCondition>
+      linkedFundUuidEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'linkedFundUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterFilterCondition>
+      linkedFundUuidContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'linkedFundUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterFilterCondition>
+      linkedFundUuidMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'linkedFundUuid',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterFilterCondition>
+      linkedFundUuidIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'linkedFundUuid',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterFilterCondition>
+      linkedFundUuidIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'linkedFundUuid',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterFilterCondition>
       notesIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -1957,6 +2126,20 @@ extension LiabilityItemQuerySortBy
     });
   }
 
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterSortBy>
+      sortByLinkedFundUuid() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'linkedFundUuid', Sort.asc);
+    });
+  }
+
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterSortBy>
+      sortByLinkedFundUuidDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'linkedFundUuid', Sort.desc);
+    });
+  }
+
   QueryBuilder<LiabilityItem, LiabilityItem, QAfterSortBy> sortByNotes() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'notes', Sort.asc);
@@ -2150,6 +2333,20 @@ extension LiabilityItemQuerySortThenBy
     });
   }
 
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterSortBy>
+      thenByLinkedFundUuid() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'linkedFundUuid', Sort.asc);
+    });
+  }
+
+  QueryBuilder<LiabilityItem, LiabilityItem, QAfterSortBy>
+      thenByLinkedFundUuidDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'linkedFundUuid', Sort.desc);
+    });
+  }
+
   QueryBuilder<LiabilityItem, LiabilityItem, QAfterSortBy> thenByNotes() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'notes', Sort.asc);
@@ -2280,6 +2477,14 @@ extension LiabilityItemQueryWhereDistinct
     });
   }
 
+  QueryBuilder<LiabilityItem, LiabilityItem, QDistinct>
+      distinctByLinkedFundUuid({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'linkedFundUuid',
+          caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<LiabilityItem, LiabilityItem, QDistinct> distinctByNotes(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -2376,6 +2581,13 @@ extension LiabilityItemQueryProperty
   QueryBuilder<LiabilityItem, bool, QQueryOperations> isRecurringProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isRecurring');
+    });
+  }
+
+  QueryBuilder<LiabilityItem, String?, QQueryOperations>
+      linkedFundUuidProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'linkedFundUuid');
     });
   }
 

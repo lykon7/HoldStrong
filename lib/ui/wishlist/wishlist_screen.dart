@@ -26,8 +26,17 @@ class WishlistScreen extends ConsumerWidget {
             );
           }
 
-          return ListView.builder(
+          return ReorderableListView.builder(
             itemCount: items.length,
+            onReorder: (oldIndex, newIndex) {
+              // Flutter's ReorderableListView passes newIndex as if the old
+              // item is already removed, so we adjust when moving downward.
+              if (newIndex > oldIndex) newIndex -= 1;
+              final reordered = [...items];
+              final moved = reordered.removeAt(oldIndex);
+              reordered.insert(newIndex, moved);
+              ref.read(wishlistControllerProvider.notifier).reorderItems(reordered);
+            },
             itemBuilder: (context, index) {
               final item = items[index];
               return Dismissible(
@@ -60,13 +69,23 @@ class WishlistScreen extends ConsumerWidget {
                 child: ListTile(
                   title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: Text('Added ${item.createdAt.toString().split(' ')[0]}'),
-                  trailing: Text(
-                    'LKR ${item.estimatedCost.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.primary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'LKR ${item.estimatedCost.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.drag_handle,
+                        color: Colors.grey.withOpacity(0.6),
+                      ),
+                    ],
                   ),
                 ),
               );
@@ -82,6 +101,7 @@ class WishlistScreen extends ConsumerWidget {
       ),
     );
   }
+
 
   Future<void> _showAddDialog(BuildContext context, WidgetRef ref) async {
     final nameController = TextEditingController();

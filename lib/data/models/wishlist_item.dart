@@ -9,4 +9,7 @@ class WishlistItem {
   late String name;
   late double estimatedCost;
   late DateTime createdAt;
+
+  /// Used to persist user-defined drag-and-drop order.
+  int sortOrder = 0;
 }

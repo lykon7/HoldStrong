@@ -87,4 +87,7 @@ class LiabilityItem {
 
   @Index()
   late DateTime createdAt;
+
+  /// Optional: the UUID of the fund account that should be debited on payment.
+  String? linkedFundUuid;
 }

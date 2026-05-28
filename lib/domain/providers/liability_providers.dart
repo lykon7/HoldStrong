@@ -47,6 +47,7 @@ class LiabilityNotifier extends StateNotifier<AsyncValue<void>> {
     required int count,
     required LiabilityFrequency frequency,
     String? notes,
+    String? linkedFundUuid,
   }) async {
     state = const AsyncLoading();
     try {
@@ -57,6 +58,7 @@ class LiabilityNotifier extends StateNotifier<AsyncValue<void>> {
         count: count,
         frequency: frequency,
         notes: notes,
+        linkedFundUuid: linkedFundUuid,
       );
       state = const AsyncData(null);
     } catch (e, st) {

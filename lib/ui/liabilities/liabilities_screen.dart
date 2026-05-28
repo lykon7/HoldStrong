@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/theme.dart';
+import '../../data/models/fund_account.dart';
 import '../../data/models/liability_item.dart';
+import '../../domain/providers/fund_providers.dart';
 import '../../domain/providers/liability_providers.dart';
 
 class LiabilitiesScreen extends ConsumerWidget {
@@ -311,6 +313,11 @@ class _LiabilityTile extends ConsumerWidget {
                             ],
                           ],
                         ),
+                        // Show linked account chip if set
+                        if (item.linkedFundUuid != null) ...[
+                          const SizedBox(height: 4),
+                          _LinkedAccountChip(fundUuid: item.linkedFundUuid!),
+                        ],
                       ],
                     ),
                   ),
@@ -352,6 +359,38 @@ class _LiabilityTile extends ConsumerWidget {
     return LiabilityFrequency.values[code % LiabilityFrequency.values.length]
         .label
         .toUpperCase();
+  }
+}
+
+// ── Linked account chip ───────────────────────────────────────────────────────
+
+class _LinkedAccountChip extends ConsumerWidget {
+  final String fundUuid;
+  const _LinkedAccountChip({required this.fundUuid});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final accounts = ref.watch(allFundAccountsProvider).value ?? [];
+    final account = accounts.cast<FundAccount?>().firstWhere(
+          (a) => a?.uuid == fundUuid,
+          orElse: () => null,
+        );
+    if (account == null) return const SizedBox.shrink();
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.account_balance_wallet_outlined,
+            size: 10, color: AppColors.accentBlue),
+        const SizedBox(width: 3),
+        Text(
+          account.name,
+          style: const TextStyle(
+              fontSize: 10,
+              color: AppColors.accentBlue,
+              letterSpacing: 0.3),
+        ),
+      ],
+    );
   }
 }
 
@@ -553,6 +592,7 @@ class _LiabilityFormState extends State<_LiabilityForm> {
   LiabilityFrequency _frequency = LiabilityFrequency.monthly;
   DateTime _dueDate = DateTime.now().add(const Duration(days: 7));
   bool _isBnpl = false;
+  String? _selectedFundUuid;
 
   bool get _isEdit => widget.existing != null;
 
@@ -573,6 +613,7 @@ class _LiabilityFormState extends State<_LiabilityForm> {
               e.recurrenceFrequency! % LiabilityFrequency.values.length]
           : LiabilityFrequency.monthly;
       _totalInstCtrl.text = e.totalInstalments?.toString() ?? '';
+      _selectedFundUuid = e.linkedFundUuid;
     }
   }
 
@@ -612,6 +653,7 @@ class _LiabilityFormState extends State<_LiabilityForm> {
         count: count,
         frequency: _frequency,
         notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+        linkedFundUuid: _selectedFundUuid,
       );
       Navigator.of(context).pop();
       return;
@@ -627,6 +669,7 @@ class _LiabilityFormState extends State<_LiabilityForm> {
       ..isRecurring = _isRecurring
       ..recurrenceFrequency = _isRecurring ? _frequency.index : null
       ..notes = _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim()
+      ..linkedFundUuid = _selectedFundUuid
       ..createdAt = widget.existing?.createdAt ?? DateTime.now();
 
     if (_isEdit) {
@@ -640,6 +683,7 @@ class _LiabilityFormState extends State<_LiabilityForm> {
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.of(context).viewInsets.bottom;
+    final accounts = widget.ref.watch(allFundAccountsProvider).value ?? [];
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottom),
       child: SingleChildScrollView(
@@ -780,6 +824,41 @@ class _LiabilityFormState extends State<_LiabilityForm> {
               ),
               const SizedBox(height: 12),
             ],
+
+            // Fund account picker
+            const Text('DEDUCT FROM ACCOUNT',
+                style: TextStyle(
+                    fontSize: 10,
+                    letterSpacing: 2,
+                    color: AppColors.textSecondary)),
+            const SizedBox(height: 8),
+            if (accounts.isEmpty)
+              const Text(
+                'No fund accounts found. Add one in the Funds screen.',
+                style: TextStyle(
+                    fontSize: 12, color: AppColors.textSecondary),
+              )
+            else
+              DropdownButtonFormField<String?>(
+                value: _selectedFundUuid,
+                decoration: const InputDecoration(
+                  labelText: 'Account (optional)',
+                  prefixIcon: Icon(Icons.account_balance_wallet_outlined,
+                      size: 18),
+                ),
+                items: [
+                  const DropdownMenuItem<String?>(
+                    value: null,
+                    child: Text('None — do not deduct'),
+                  ),
+                  ...accounts.map((a) => DropdownMenuItem<String?>(
+                        value: a.uuid,
+                        child: Text(a.name),
+                      )),
+                ],
+                onChanged: (v) => setState(() => _selectedFundUuid = v),
+              ),
+            const SizedBox(height: 16),
 
             // Notes
             TextField(

@@ -31,6 +31,11 @@ const WishlistItemSchema = CollectionSchema(
       id: 2,
       name: r'name',
       type: IsarType.string,
+    ),
+    r'sortOrder': PropertySchema(
+      id: 3,
+      name: r'sortOrder',
+      type: IsarType.long,
     )
   },
   estimateSize: _wishlistItemEstimateSize,
@@ -66,6 +71,7 @@ void _wishlistItemSerialize(
   writer.writeDateTime(offsets[0], object.createdAt);
   writer.writeDouble(offsets[1], object.estimatedCost);
   writer.writeString(offsets[2], object.name);
+  writer.writeLong(offsets[3], object.sortOrder);
 }
 
 WishlistItem _wishlistItemDeserialize(
@@ -79,6 +85,7 @@ WishlistItem _wishlistItemDeserialize(
   object.estimatedCost = reader.readDouble(offsets[1]);
   object.id = id;
   object.name = reader.readString(offsets[2]);
+  object.sortOrder = reader.readLong(offsets[3]);
   return object;
 }
 
@@ -95,6 +102,8 @@ P _wishlistItemDeserializeProp<P>(
       return (reader.readDouble(offset)) as P;
     case 2:
       return (reader.readString(offset)) as P;
+    case 3:
+      return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -502,6 +511,62 @@ extension WishlistItemQueryFilter
       ));
     });
   }
+
+  QueryBuilder<WishlistItem, WishlistItem, QAfterFilterCondition>
+      sortOrderEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'sortOrder',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<WishlistItem, WishlistItem, QAfterFilterCondition>
+      sortOrderGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'sortOrder',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<WishlistItem, WishlistItem, QAfterFilterCondition>
+      sortOrderLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'sortOrder',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<WishlistItem, WishlistItem, QAfterFilterCondition>
+      sortOrderBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'sortOrder',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension WishlistItemQueryObject
@@ -546,6 +611,18 @@ extension WishlistItemQuerySortBy
   QueryBuilder<WishlistItem, WishlistItem, QAfterSortBy> sortByNameDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.desc);
+    });
+  }
+
+  QueryBuilder<WishlistItem, WishlistItem, QAfterSortBy> sortBySortOrder() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sortOrder', Sort.asc);
+    });
+  }
+
+  QueryBuilder<WishlistItem, WishlistItem, QAfterSortBy> sortBySortOrderDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sortOrder', Sort.desc);
     });
   }
 }
@@ -600,6 +677,18 @@ extension WishlistItemQuerySortThenBy
       return query.addSortBy(r'name', Sort.desc);
     });
   }
+
+  QueryBuilder<WishlistItem, WishlistItem, QAfterSortBy> thenBySortOrder() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sortOrder', Sort.asc);
+    });
+  }
+
+  QueryBuilder<WishlistItem, WishlistItem, QAfterSortBy> thenBySortOrderDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sortOrder', Sort.desc);
+    });
+  }
 }
 
 extension WishlistItemQueryWhereDistinct
@@ -621,6 +710,12 @@ extension WishlistItemQueryWhereDistinct
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'name', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<WishlistItem, WishlistItem, QDistinct> distinctBySortOrder() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'sortOrder');
     });
   }
 }
@@ -648,6 +743,12 @@ extension WishlistItemQueryProperty
   QueryBuilder<WishlistItem, String, QQueryOperations> nameProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'name');
+    });
+  }
+
+  QueryBuilder<WishlistItem, int, QQueryOperations> sortOrderProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'sortOrder');
     });
   }
 }
