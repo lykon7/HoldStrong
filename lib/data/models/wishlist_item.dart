@@ -12,4 +12,6 @@ class WishlistItem {
 
   /// Used to persist user-defined drag-and-drop order.
   int sortOrder = 0;
+
+  bool isBought = false;
 }

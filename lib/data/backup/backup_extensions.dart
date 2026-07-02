@@ -213,6 +213,7 @@ extension WishlistItemBackup on WishlistItem {
         'estimatedCost': estimatedCost,
         'createdAt': createdAt.toIso8601String(),
         'sortOrder': sortOrder,
+        'isBought': isBought,
       };
 }
 
@@ -221,7 +222,8 @@ WishlistItem wishlistItemFromBackupJson(Map<String, dynamic> j) {
     ..name = j['name'] as String
     ..estimatedCost = (j['estimatedCost'] as num).toDouble()
     ..createdAt = DateTime.parse(j['createdAt'] as String)
-    ..sortOrder = j['sortOrder'] as int? ?? 0;
+    ..sortOrder = j['sortOrder'] as int? ?? 0
+    ..isBought = j['isBought'] as bool? ?? false;
 }
 
 // ─── LiabilityItem ───────────────────────────────────────────────────────────

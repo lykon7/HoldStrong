@@ -27,13 +27,18 @@ const WishlistItemSchema = CollectionSchema(
       name: r'estimatedCost',
       type: IsarType.double,
     ),
-    r'name': PropertySchema(
+    r'isBought': PropertySchema(
       id: 2,
+      name: r'isBought',
+      type: IsarType.bool,
+    ),
+    r'name': PropertySchema(
+      id: 3,
       name: r'name',
       type: IsarType.string,
     ),
     r'sortOrder': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'sortOrder',
       type: IsarType.long,
     )
@@ -70,8 +75,9 @@ void _wishlistItemSerialize(
 ) {
   writer.writeDateTime(offsets[0], object.createdAt);
   writer.writeDouble(offsets[1], object.estimatedCost);
-  writer.writeString(offsets[2], object.name);
-  writer.writeLong(offsets[3], object.sortOrder);
+  writer.writeBool(offsets[2], object.isBought);
+  writer.writeString(offsets[3], object.name);
+  writer.writeLong(offsets[4], object.sortOrder);
 }
 
 WishlistItem _wishlistItemDeserialize(
@@ -84,8 +90,9 @@ WishlistItem _wishlistItemDeserialize(
   object.createdAt = reader.readDateTime(offsets[0]);
   object.estimatedCost = reader.readDouble(offsets[1]);
   object.id = id;
-  object.name = reader.readString(offsets[2]);
-  object.sortOrder = reader.readLong(offsets[3]);
+  object.isBought = reader.readBool(offsets[2]);
+  object.name = reader.readString(offsets[3]);
+  object.sortOrder = reader.readLong(offsets[4]);
   return object;
 }
 
@@ -101,8 +108,10 @@ P _wishlistItemDeserializeProp<P>(
     case 1:
       return (reader.readDouble(offset)) as P;
     case 2:
-      return (reader.readString(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 3:
+      return (reader.readString(offset)) as P;
+    case 4:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -378,6 +387,16 @@ extension WishlistItemQueryFilter
     });
   }
 
+  QueryBuilder<WishlistItem, WishlistItem, QAfterFilterCondition>
+      isBoughtEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isBought',
+        value: value,
+      ));
+    });
+  }
+
   QueryBuilder<WishlistItem, WishlistItem, QAfterFilterCondition> nameEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -602,6 +621,18 @@ extension WishlistItemQuerySortBy
     });
   }
 
+  QueryBuilder<WishlistItem, WishlistItem, QAfterSortBy> sortByIsBought() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isBought', Sort.asc);
+    });
+  }
+
+  QueryBuilder<WishlistItem, WishlistItem, QAfterSortBy> sortByIsBoughtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isBought', Sort.desc);
+    });
+  }
+
   QueryBuilder<WishlistItem, WishlistItem, QAfterSortBy> sortByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.asc);
@@ -666,6 +697,18 @@ extension WishlistItemQuerySortThenBy
     });
   }
 
+  QueryBuilder<WishlistItem, WishlistItem, QAfterSortBy> thenByIsBought() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isBought', Sort.asc);
+    });
+  }
+
+  QueryBuilder<WishlistItem, WishlistItem, QAfterSortBy> thenByIsBoughtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isBought', Sort.desc);
+    });
+  }
+
   QueryBuilder<WishlistItem, WishlistItem, QAfterSortBy> thenByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.asc);
@@ -706,6 +749,12 @@ extension WishlistItemQueryWhereDistinct
     });
   }
 
+  QueryBuilder<WishlistItem, WishlistItem, QDistinct> distinctByIsBought() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isBought');
+    });
+  }
+
   QueryBuilder<WishlistItem, WishlistItem, QDistinct> distinctByName(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -737,6 +786,12 @@ extension WishlistItemQueryProperty
   QueryBuilder<WishlistItem, double, QQueryOperations> estimatedCostProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'estimatedCost');
+    });
+  }
+
+  QueryBuilder<WishlistItem, bool, QQueryOperations> isBoughtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isBought');
     });
   }
 
