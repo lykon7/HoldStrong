@@ -51,3 +51,34 @@ final monthlyIncomeTotalProvider = Provider<AsyncValue<double>>((ref) {
         .fold<double>(0.0, (sum, e) => sum + e.amount);
   });
 });
+
+/// Total for the previous Mon–Sun week
+final lastWeekIncomeTotalProvider = Provider<AsyncValue<double>>((ref) {
+  return ref.watch(allIncomeProvider).whenData((entries) {
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final thisWeekStart =
+        todayStart.subtract(Duration(days: todayStart.weekday - 1));
+    final lastWeekStart = thisWeekStart.subtract(const Duration(days: 7));
+    final lastWeekEnd = thisWeekStart;
+    return entries
+        .where((e) =>
+            !e.loggedAt.isBefore(lastWeekStart) &&
+            e.loggedAt.isBefore(lastWeekEnd))
+        .fold<double>(0.0, (sum, e) => sum + e.amount);
+  });
+});
+
+/// Total for the previous calendar month
+final lastMonthIncomeTotalProvider = Provider<AsyncValue<double>>((ref) {
+  return ref.watch(allIncomeProvider).whenData((entries) {
+    final now = DateTime.now();
+    final lastMonthStart = DateTime(now.year, now.month - 1, 1);
+    final lastMonthEnd = DateTime(now.year, now.month, 1);
+    return entries
+        .where((e) =>
+            !e.loggedAt.isBefore(lastMonthStart) &&
+            e.loggedAt.isBefore(lastMonthEnd))
+        .fold<double>(0.0, (sum, e) => sum + e.amount);
+  });
+});

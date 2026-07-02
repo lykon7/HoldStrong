@@ -7,6 +7,7 @@ import '../../data/models/fund_account.dart';
 import '../../data/models/liability_item.dart';
 import '../../domain/providers/fund_providers.dart';
 import '../../domain/providers/liability_providers.dart';
+import '../../core/export_helper.dart';
 
 class LiabilitiesScreen extends ConsumerWidget {
   const LiabilitiesScreen({super.key});
@@ -25,6 +26,20 @@ class LiabilitiesScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('LIABILITIES'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.share),
+            tooltip: 'Export Liabilities',
+            onPressed: () {
+              final items = allAsync.value ?? [];
+              if (items.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('No liabilities to export.')),
+                );
+                return;
+              }
+              ExportHelper.exportLiabilities(items);
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () => _showAddSheet(context, ref),

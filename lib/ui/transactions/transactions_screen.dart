@@ -42,8 +42,12 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     final dailyExpense = ref.watch(dailyExpenseTotalProvider);
     final weeklyIncome = ref.watch(weeklyIncomeTotalProvider);
     final weeklyExpense = ref.watch(weeklyExpenseTotalProvider);
+    final lastWeekIncome = ref.watch(lastWeekIncomeTotalProvider);
+    final lastWeekExpense = ref.watch(lastWeekExpenseTotalProvider);
     final monthlyIncome = ref.watch(monthlyIncomeTotalProvider);
     final monthlyExpense = ref.watch(monthlyExpenseTotalProvider);
+    final lastMonthIncome = ref.watch(lastMonthIncomeTotalProvider);
+    final lastMonthExpense = ref.watch(lastMonthExpenseTotalProvider);
 
     return Scaffold(
       backgroundColor: AppColors.backgroundPrimary,
@@ -71,8 +75,12 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
             dailyExpense: dailyExpense,
             weeklyIncome: weeklyIncome,
             weeklyExpense: weeklyExpense,
+            lastWeekIncome: lastWeekIncome,
+            lastWeekExpense: lastWeekExpense,
             monthlyIncome: monthlyIncome,
             monthlyExpense: monthlyExpense,
+            lastMonthIncome: lastMonthIncome,
+            lastMonthExpense: lastMonthExpense,
           ),
           const Divider(height: 1),
           Expanded(
@@ -352,16 +360,24 @@ class _SummaryStrip extends StatelessWidget {
     required this.dailyExpense,
     required this.weeklyIncome,
     required this.weeklyExpense,
+    required this.lastWeekIncome,
+    required this.lastWeekExpense,
     required this.monthlyIncome,
     required this.monthlyExpense,
+    required this.lastMonthIncome,
+    required this.lastMonthExpense,
   });
 
   final AsyncValue<double> dailyIncome;
   final AsyncValue<double> dailyExpense;
   final AsyncValue<double> weeklyIncome;
   final AsyncValue<double> weeklyExpense;
+  final AsyncValue<double> lastWeekIncome;
+  final AsyncValue<double> lastWeekExpense;
   final AsyncValue<double> monthlyIncome;
   final AsyncValue<double> monthlyExpense;
+  final AsyncValue<double> lastMonthIncome;
+  final AsyncValue<double> lastMonthExpense;
 
   @override
   Widget build(BuildContext context) {
@@ -370,6 +386,11 @@ class _SummaryStrip extends StatelessWidget {
     final weekStart =
         todayStart.subtract(Duration(days: todayStart.weekday - 1));
     final weekEnd = weekStart.add(const Duration(days: 6));
+    // Last week bounds
+    final lastWeekStart = weekStart.subtract(const Duration(days: 7));
+    final lastWeekEnd = weekStart.subtract(const Duration(days: 1));
+    // Last month bounds
+    final lastMonthDate = DateTime(now.year, now.month - 1, 1);
     final dayFmt = DateFormat('d MMM');
     final monthFmt = DateFormat('MMMM yyyy');
 
@@ -396,11 +417,30 @@ class _SummaryStrip extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           _SummaryCard(
+            label: 'LAST WEEK',
+            sublabel:
+                '${dayFmt.format(lastWeekStart)} - ${dayFmt.format(lastWeekEnd)}',
+            incomeValue: lastWeekIncome,
+            expenseValue: lastWeekExpense,
+            accentColor: const Color(0xFF2E6098),
+            muted: true,
+          ),
+          const SizedBox(width: 12),
+          _SummaryCard(
             label: 'THIS MONTH',
             sublabel: monthFmt.format(now),
             incomeValue: monthlyIncome,
             expenseValue: monthlyExpense,
             accentColor: const Color(0xFF7B68EE),
+          ),
+          const SizedBox(width: 12),
+          _SummaryCard(
+            label: 'LAST MONTH',
+            sublabel: monthFmt.format(lastMonthDate),
+            incomeValue: lastMonthIncome,
+            expenseValue: lastMonthExpense,
+            accentColor: const Color(0xFF5148A8),
+            muted: true,
           ),
         ],
       ),
@@ -415,6 +455,7 @@ class _SummaryCard extends StatelessWidget {
     required this.incomeValue,
     required this.expenseValue,
     required this.accentColor,
+    this.muted = false,
   });
 
   final String label;
@@ -422,6 +463,9 @@ class _SummaryCard extends StatelessWidget {
   final AsyncValue<double> incomeValue;
   final AsyncValue<double> expenseValue;
   final Color accentColor;
+  /// When true, renders with a slightly dimmed background to visually
+  /// distinguish historical (past) cards from current-period cards.
+  final bool muted;
 
   Widget _buildNetValue() {
     if (incomeValue.hasValue && expenseValue.hasValue) {
@@ -449,8 +493,14 @@ class _SummaryCard extends StatelessWidget {
       width: 200,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.backgroundElevated,
-        border: Border.all(color: AppColors.cardBorder),
+        color: muted
+            ? AppColors.backgroundElevated.withOpacity(0.6)
+            : AppColors.backgroundElevated,
+        border: Border.all(
+          color: muted
+              ? AppColors.cardBorder.withOpacity(0.5)
+              : AppColors.cardBorder,
+        ),
         borderRadius: BorderRadius.circular(2),
       ),
       child: Column(
@@ -463,27 +513,31 @@ class _SummaryCard extends StatelessWidget {
                 width: 3,
                 height: 12,
                 decoration: BoxDecoration(
-                  color: accentColor,
+                  color: accentColor.withOpacity(muted ? 0.6 : 1.0),
                   borderRadius: BorderRadius.circular(1),
                 ),
               ),
               const SizedBox(width: 6),
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'IBMPlexMono',
                   fontSize: 10,
                   letterSpacing: 2,
-                  color: AppColors.textSecondary,
+                  color: muted
+                      ? AppColors.textSecondary.withOpacity(0.7)
+                      : AppColors.textSecondary,
                 ),
               ),
               const Spacer(),
               Text(
                 sublabel,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'IBMPlexMono',
                   fontSize: 9,
-                  color: AppColors.textSecondary,
+                  color: muted
+                      ? AppColors.textSecondary.withOpacity(0.6)
+                      : AppColors.textSecondary,
                   letterSpacing: 0.5,
                 ),
               ),
@@ -495,13 +549,13 @@ class _SummaryCard extends StatelessWidget {
               _SummaryValueLine(
                 label: 'IN',
                 value: incomeValue,
-                color: _kIncomeGreen,
+                color: _kIncomeGreen.withOpacity(muted ? 0.7 : 1.0),
               ),
               const SizedBox(height: 4),
               _SummaryValueLine(
                 label: 'OUT',
                 value: expenseValue,
-                color: _kExpenseRed,
+                color: _kExpenseRed.withOpacity(muted ? 0.7 : 1.0),
               ),
             ],
           ),

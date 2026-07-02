@@ -12,6 +12,8 @@ import '../models/expense_entry.dart';
 import '../models/fund_account.dart';
 import '../models/recurring_transaction.dart';
 import '../models/journal_entry.dart';
+import '../models/wishlist_item.dart';
+import '../models/liability_item.dart';
 import 'backup_extensions.dart';
 
 const _kBackupVersion = 1;
@@ -55,6 +57,8 @@ class BackupService {
       final funds = await _isar.fundAccounts.where().findAll();
       final recurring = await _isar.recurringTransactions.where().findAll();
       final journals = await _isar.journalEntrys.where().findAll();
+      final wishlist = await _isar.wishlistItems.where().findAll();
+      final liabilities = await _isar.liabilityItems.where().findAll();
 
       final payload = <String, dynamic>{
         'version': _kBackupVersion,
@@ -68,6 +72,8 @@ class BackupService {
         'recurringTransactions':
             recurring.map((e) => e.toBackupJson()).toList(),
         'journalEntries': journals.map((e) => e.toBackupJson()).toList(),
+        'wishlist': wishlist.map((e) => e.toBackupJson()).toList(),
+        'liabilities': liabilities.map((e) => e.toBackupJson()).toList(),
       };
 
       final jsonStr = const JsonEncoder.withIndent('  ').convert(payload);
@@ -106,6 +112,8 @@ class BackupService {
         'fundAccounts': 0,
         'recurringTransactions': 0,
         'journalEntries': 0,
+        'wishlist': 0,
+        'liabilities': 0,
       };
 
       await _isar.writeTxn(() async {
@@ -214,6 +222,38 @@ class BackupService {
           if (existing == null) {
             await _isar.journalEntrys.put(journalEntryFromBackupJson(j));
             counts['journalEntries'] = counts['journalEntries']! + 1;
+          }
+        }
+
+        // Wishlist
+        final wishlistList = (json['wishlist'] as List<dynamic>? ?? [])
+            .cast<Map<String, dynamic>>();
+        for (final j in wishlistList) {
+          final name = j['name'] as String;
+          final createdAt = DateTime.parse(j['createdAt'] as String);
+          final existing = await _isar.wishlistItems
+              .filter()
+              .nameEqualTo(name)
+              .createdAtEqualTo(createdAt)
+              .findFirst();
+          if (existing == null) {
+            await _isar.wishlistItems.put(wishlistItemFromBackupJson(j));
+            counts['wishlist'] = counts['wishlist']! + 1;
+          }
+        }
+
+        // Liabilities
+        final liabilityList = (json['liabilities'] as List<dynamic>? ?? [])
+            .cast<Map<String, dynamic>>();
+        for (final j in liabilityList) {
+          final uuid = j['uuid'] as String;
+          final existing = await _isar.liabilityItems
+              .filter()
+              .uuidEqualTo(uuid)
+              .findFirst();
+          if (existing == null) {
+            await _isar.liabilityItems.put(liabilityItemFromBackupJson(j));
+            counts['liabilities'] = counts['liabilities']! + 1;
           }
         }
       });

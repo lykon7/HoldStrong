@@ -8,6 +8,8 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/theme.dart';
 import '../../domain/providers/backup_provider.dart';
 import '../../domain/providers/goal_providers.dart';
+import 'package:uuid/uuid.dart';
+import '../../data/models/fund_account.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -134,19 +136,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void _showImportSuccess(Map<String, int> counts) {
     final total = counts.values.fold(0, (a, b) => a + b);
     final lines = [
-      if (counts['goals']! > 0) '  ${counts['goals']} goal(s)',
-      if (counts['resistEntries']! > 0)
+      if (counts['goals'] != null && counts['goals']! > 0) '  ${counts['goals']} goal(s)',
+      if (counts['resistEntries'] != null && counts['resistEntries']! > 0)
         '  ${counts['resistEntries']} resist log(s)',
-      if (counts['cravingLabels']! > 0)
+      if (counts['cravingLabels'] != null && counts['cravingLabels']! > 0)
         '  ${counts['cravingLabels']} craving label(s)',
-      if (counts['incomeEntries']! > 0)
+      if (counts['incomeEntries'] != null && counts['incomeEntries']! > 0)
         '  ${counts['incomeEntries']} income entr(ies)',
-      if (counts['expenseEntries']! > 0)
+      if (counts['expenseEntries'] != null && counts['expenseEntries']! > 0)
         '  ${counts['expenseEntries']} expense(s)',
-      if (counts['fundAccounts']! > 0)
+      if (counts['fundAccounts'] != null && counts['fundAccounts']! > 0)
         '  ${counts['fundAccounts']} fund account(s)',
-      if (counts['recurringTransactions']! > 0)
+      if (counts['recurringTransactions'] != null && counts['recurringTransactions']! > 0)
         '  ${counts['recurringTransactions']} recurring transaction(s)',
+      if (counts['journalEntries'] != null && counts['journalEntries']! > 0)
+        '  ${counts['journalEntries']} journal entry(ies)',
+      if (counts['wishlist'] != null && counts['wishlist']! > 0)
+        '  ${counts['wishlist']} wishlist item(s)',
+      if (counts['liabilities'] != null && counts['liabilities']! > 0)
+        '  ${counts['liabilities']} liability item(s)',
     ];
 
     showDialog(
@@ -239,11 +247,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              await ref.read(resistRepositoryProvider).deleteAllEntries();
-              final goals = await ref.read(allGoalsProvider.future);
-              for (final g in goals) {
-                await ref.read(goalRepositoryProvider).deleteGoal(g.uuid);
-              }
+              final isar = ref.read(isarProvider);
+              await isar.writeTxn(() async {
+                await isar.clear();
+                await isar.fundAccounts.put(
+                  FundAccount()
+                    ..uuid = const Uuid().v4()
+                    ..name = 'Cash'
+                    ..openingBalance = 0.0
+                    ..createdAt = DateTime.now(),
+                );
+              });
             },
             child: const Text('DELETE EVERYTHING',
                 style: TextStyle(

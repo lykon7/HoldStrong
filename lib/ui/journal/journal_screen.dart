@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme.dart';
 import '../../domain/providers/journal_providers.dart';
+import '../../core/export_helper.dart';
 
 class JournalScreen extends ConsumerWidget {
   const JournalScreen({super.key});
@@ -44,6 +45,20 @@ class JournalScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('JOURNAL'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.share, size: 20),
+            tooltip: 'Export Journal',
+            onPressed: () {
+              final entries = entriesAsync.value ?? [];
+              if (entries.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Journal is empty.')),
+                );
+                return;
+              }
+              ExportHelper.exportJournal(entries);
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.add, size: 22),
             tooltip: 'Write Entry',

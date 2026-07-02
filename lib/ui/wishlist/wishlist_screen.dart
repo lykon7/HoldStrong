@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/providers/wishlist_providers.dart';
 import '../../data/models/wishlist_item.dart';
+import '../../core/export_helper.dart';
 
 class WishlistScreen extends ConsumerWidget {
   const WishlistScreen({super.key});
@@ -13,6 +14,22 @@ class WishlistScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Wishlist'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.share),
+            tooltip: 'Export Wishlist',
+            onPressed: () {
+              final items = wishlistAsync.value ?? [];
+              if (items.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Wishlist is empty.')),
+                );
+                return;
+              }
+              ExportHelper.exportWishlist(items);
+            },
+          ),
+        ],
       ),
       body: wishlistAsync.when(
         data: (items) {

@@ -6,6 +6,8 @@ import '../../data/models/expense_entry.dart';
 import '../../data/models/fund_account.dart';
 import '../../data/models/recurring_transaction.dart';
 import '../../data/models/journal_entry.dart';
+import '../../data/models/wishlist_item.dart';
+import '../../data/models/liability_item.dart';
 
 // ─── Goal ────────────────────────────────────────────────────────────────────
 
@@ -201,4 +203,64 @@ JournalEntry journalEntryFromBackupJson(Map<String, dynamic> j) {
     ..date = DateTime.parse(j['date'] as String)
     ..createdAt = DateTime.parse(j['createdAt'] as String)
     ..updatedAt = DateTime.parse(j['updatedAt'] as String);
+}
+
+// ─── WishlistItem ────────────────────────────────────────────────────────────
+
+extension WishlistItemBackup on WishlistItem {
+  Map<String, dynamic> toBackupJson() => {
+        'name': name,
+        'estimatedCost': estimatedCost,
+        'createdAt': createdAt.toIso8601String(),
+        'sortOrder': sortOrder,
+      };
+}
+
+WishlistItem wishlistItemFromBackupJson(Map<String, dynamic> j) {
+  return WishlistItem()
+    ..name = j['name'] as String
+    ..estimatedCost = (j['estimatedCost'] as num).toDouble()
+    ..createdAt = DateTime.parse(j['createdAt'] as String)
+    ..sortOrder = j['sortOrder'] as int? ?? 0;
+}
+
+// ─── LiabilityItem ───────────────────────────────────────────────────────────
+
+extension LiabilityItemBackup on LiabilityItem {
+  Map<String, dynamic> toBackupJson() => {
+        'uuid': uuid,
+        'title': title,
+        'notes': notes,
+        'type': type,
+        'amount': amount,
+        'dueDate': dueDate.toIso8601String(),
+        'isPaid': isPaid,
+        'isRecurring': isRecurring,
+        'recurrenceFrequency': recurrenceFrequency,
+        'totalInstalments': totalInstalments,
+        'instalmentNumber': instalmentNumber,
+        'groupUuid': groupUuid,
+        'isArchived': isArchived,
+        'createdAt': createdAt.toIso8601String(),
+        'linkedFundUuid': linkedFundUuid,
+      };
+}
+
+LiabilityItem liabilityItemFromBackupJson(Map<String, dynamic> j) {
+  return LiabilityItem()
+    ..uuid = j['uuid'] as String
+    ..title = j['title'] as String
+    ..notes = j['notes'] as String?
+    ..type = j['type'] as int
+    ..amount = (j['amount'] as num).toDouble()
+    ..dueDate = DateTime.parse(j['dueDate'] as String)
+    ..isPaid = j['isPaid'] as bool? ?? false
+    ..isRecurring = j['isRecurring'] as bool? ?? false
+    ..recurrenceFrequency = j['recurrenceFrequency'] as int?
+    ..totalInstalments = j['totalInstalments'] as int?
+    ..instalmentNumber = j['instalmentNumber'] as int?
+    ..groupUuid = j['groupUuid'] as String?
+    ..isArchived = j['isArchived'] as bool? ?? false
+    ..createdAt = DateTime.parse(j['createdAt'] as String)
+    ..linkedFundUuid = j['linkedFundUuid'] as String?;
 }
