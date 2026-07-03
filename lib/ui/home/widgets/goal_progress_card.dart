@@ -52,7 +52,7 @@ class GoalProgressCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
 
-          const Spacer(),
+          const SizedBox(height: 16),
 
           // Amount display
           RichText(

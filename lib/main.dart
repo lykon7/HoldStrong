@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:uuid/uuid.dart';
 
@@ -20,11 +21,13 @@ import 'data/models/workout_entry.dart';
 import 'data/models/todo_item.dart';
 import 'data/models/liability_item.dart';
 import 'domain/providers/goal_providers.dart';
+import 'domain/providers/recalibration_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final dir = await getApplicationDocumentsDirectory();
+  final prefs = await SharedPreferences.getInstance();
   final isar = await Isar.open(
     [
       GoalSchema,
@@ -60,8 +63,10 @@ void main() async {
     ProviderScope(
       overrides: [
         isarProvider.overrideWithValue(isar),
+        sharedPreferencesProvider.overrideWithValue(prefs),
       ],
       child: const HoldStrongApp(),
     ),
   );
 }
+
