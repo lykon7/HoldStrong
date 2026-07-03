@@ -6,10 +6,9 @@ import '../../domain/providers/resist_providers.dart';
 import '../../domain/providers/income_providers.dart';
 import '../../domain/providers/expense_providers.dart';
 import 'widgets/goal_progress_card.dart';
-import 'widgets/held_button.dart';
 import 'widgets/net_week_graph.dart';
 import 'widgets/hub_shortcuts.dart';
-import 'widgets/recent_feed.dart';
+import 'widgets/total_cash_card.dart';
 import '../../core/theme.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -18,7 +17,6 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activeGoal = ref.watch(activeGoalProvider);
-    final recent = ref.watch(recentEntriesProvider);
     final streak = ref.watch(streakProvider);
     final totalSaved = ref.watch(totalSavedForActiveGoalProvider);
     final incomes = ref.watch(allIncomeProvider);
@@ -40,20 +38,6 @@ class HomeScreen extends ConsumerWidget {
             const Center(child: CircularProgressIndicator(color: AppColors.accentGold)),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (goal) {
-          if (goal == null) {
-            return const Center(
-              child: Text(
-                'NO ACTIVE GOAL.\nGO TO GOALS.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: 'IBMPlexMono',
-                  color: AppColors.textSecondary,
-                  letterSpacing: 1,
-                ),
-              ),
-            );
-          }
-
           return Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
             child: Column(
@@ -63,23 +47,34 @@ class HomeScreen extends ConsumerWidget {
                 const SizedBox(height: 16),
                 const HubShortcuts(),
                 const SizedBox(height: 16),
+                const TotalCashCard(),
+                const SizedBox(height: 16),
                 // Goal progress card — fills available space
                 Expanded(
-                  child: GoalProgressCard(
-                    goal: goal,
-                    totalSaved: totalSaved.value ?? 0.0,
-                    streakDays: streak.value ?? 0,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Primary CTA
-                const HeldButton(),
-                const SizedBox(height: 16),
-                // Recent resists
-                recent.when(
-                  data: (entries) => RecentFeed(entries: entries),
-                  loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
+                  child: goal == null
+                      ? Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: AppColors.backgroundSurface,
+                            borderRadius: BorderRadius.circular(2),
+                            border: Border.all(color: AppColors.cardBorder),
+                          ),
+                          alignment: Alignment.center,
+                          child: const Text(
+                            'NO ACTIVE GOAL.\nGO TO GOALS.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontFamily: 'IBMPlexMono',
+                              color: AppColors.textSecondary,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                        )
+                      : GoalProgressCard(
+                          goal: goal,
+                          totalSaved: totalSaved.value ?? 0.0,
+                          streakDays: streak.value ?? 0,
+                        ),
                 ),
               ],
             ),
@@ -89,3 +84,4 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 }
+

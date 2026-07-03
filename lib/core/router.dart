@@ -168,27 +168,42 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   );
 });
 
-class _MainShell extends ConsumerStatefulWidget {
+class _MainShell extends ConsumerWidget {
   const _MainShell({required this.child});
   final Widget child;
 
-  @override
-  ConsumerState<_MainShell> createState() => _MainShellState();
-}
-
-class _MainShellState extends ConsumerState<_MainShell> {
-  int _selectedIndex = 0;
+  int _calculateSelectedIndex(BuildContext context) {
+    final location = GoRouterState.of(context).uri.path;
+    if (location.startsWith('/resists') ||
+        location.startsWith('/history') ||
+        location.startsWith('/goals')) {
+      return 1;
+    }
+    if (location.startsWith('/transactions') ||
+        location.startsWith('/recurring') ||
+        location.startsWith('/expenses') ||
+        location.startsWith('/income')) {
+      return 2;
+    }
+    if (location.startsWith('/funds')) {
+      return 3;
+    }
+    if (location.startsWith('/hub')) {
+      return 4;
+    }
+    return 0;
+  }
 
   static const _tabs = ['/', '/resists', '/transactions', '/funds', '/hub'];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selectedIndex = _calculateSelectedIndex(context);
     return Scaffold(
-      body: widget.child,
+      body: child,
       bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
+        selectedIndex: selectedIndex,
         onDestinationSelected: (i) {
-          setState(() => _selectedIndex = i);
           context.go(_tabs[i]);
         },
         destinations: const [
@@ -202,3 +217,4 @@ class _MainShellState extends ConsumerState<_MainShell> {
     );
   }
 }
+
