@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -298,17 +299,16 @@ class _RecalibrationTimerCardState
           ],
         ),
         const SizedBox(height: 16),
-        // Live counter display
+        // Live counter display with rigid flex layout and tabular figures
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildTimeSegment(days.toString().padLeft(2, '0'), 'DAYS'),
+            Expanded(child: _buildTimeSegment(days.toString().padLeft(2, '0'), 'DAYS')),
             _buildColon(),
-            _buildTimeSegment(hours.toString().padLeft(2, '0'), 'HRS'),
+            Expanded(child: _buildTimeSegment(hours.toString().padLeft(2, '0'), 'HRS')),
             _buildColon(),
-            _buildTimeSegment(minutes.toString().padLeft(2, '0'), 'MIN'),
+            Expanded(child: _buildTimeSegment(minutes.toString().padLeft(2, '0'), 'MIN')),
             _buildColon(),
-            _buildTimeSegment(seconds.toString().padLeft(2, '0'), 'SEC'),
+            Expanded(child: _buildTimeSegment(seconds.toString().padLeft(2, '0'), 'SEC')),
           ],
         ),
         const SizedBox(height: 16),
@@ -351,17 +351,20 @@ class _RecalibrationTimerCardState
       children: [
         Text(
           value,
+          textAlign: TextAlign.center,
           style: const TextStyle(
             fontFamily: 'Rajdhani',
             fontWeight: FontWeight.w700,
             fontSize: 28,
             color: AppColors.accentGold,
             height: 1,
+            fontFeatures: [FontFeature.tabularFigures()],
           ),
         ),
         const SizedBox(height: 4),
         Text(
           label,
+          textAlign: TextAlign.center,
           style: const TextStyle(
             fontFamily: 'IBMPlexMono',
             fontSize: 9,
@@ -374,17 +377,23 @@ class _RecalibrationTimerCardState
   }
 
   Widget _buildColon() {
-    return const Padding(
-      padding: EdgeInsets.only(bottom: 14),
-      child: Text(
-        ':',
-        style: TextStyle(
-          fontFamily: 'Rajdhani',
-          fontWeight: FontWeight.w700,
-          fontSize: 22,
-          color: AppColors.textSecondary,
+    return const SizedBox(
+      width: 14,
+      child: Center(
+        child: Padding(
+          padding: EdgeInsets.only(bottom: 14),
+          child: Text(
+            ':',
+            style: TextStyle(
+              fontFamily: 'Rajdhani',
+              fontWeight: FontWeight.w700,
+              fontSize: 22,
+              color: AppColors.textSecondary,
+            ),
+          ),
         ),
       ),
     );
   }
 }
+
