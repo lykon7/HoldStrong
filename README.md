@@ -8,7 +8,7 @@ HoldStrong is a discipline tracking application built with Flutter. It is design
 
 | Dashboard & Recalibration Engine | Discipline & Financial Tracking |
 | :---: | :---: |
-| ![Dashboard](Screenshots/holdstrong_1.jpeg) | ![Tracking](Screenshots/holdstrong_2.jpeg) |
+| <img src="Screenshots/holdstrong_1.jpeg" width="320" /> | <img src="Screenshots/holdstrong_2.jpeg" width="320" /> |
 
 ## Features
 
