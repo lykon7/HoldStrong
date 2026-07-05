@@ -4,6 +4,12 @@
 
 HoldStrong is a discipline tracking application built with Flutter. It is designed to help users track resisted cravings, measure their progress toward specific goals, and manage their personal finances through income, expenses, and fund tracking.
 
+## Screenshots
+
+| Dashboard & Recalibration Engine | Discipline & Financial Tracking |
+| :---: | :---: |
+| ![Dashboard](Screenshots/holdstrong_1.jpeg) | ![Tracking](Screenshots/holdstrong_2.jpeg) |
+
 ## Features
 
 - **Discipline Tracking**: Log every time you resist a craving. Track the money saved and calories avoided.
