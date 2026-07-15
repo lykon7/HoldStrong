@@ -14,6 +14,7 @@ import '../models/recurring_transaction.dart';
 import '../models/journal_entry.dart';
 import '../models/wishlist_item.dart';
 import '../models/liability_item.dart';
+import '../models/account_transfer.dart';
 import 'backup_extensions.dart';
 
 const _kBackupVersion = 1;
@@ -59,6 +60,7 @@ class BackupService {
       final journals = await _isar.journalEntrys.where().findAll();
       final wishlist = await _isar.wishlistItems.where().findAll();
       final liabilities = await _isar.liabilityItems.where().findAll();
+      final transfers = await _isar.accountTransfers.where().findAll();
 
       final payload = <String, dynamic>{
         'version': _kBackupVersion,
@@ -74,6 +76,7 @@ class BackupService {
         'journalEntries': journals.map((e) => e.toBackupJson()).toList(),
         'wishlist': wishlist.map((e) => e.toBackupJson()).toList(),
         'liabilities': liabilities.map((e) => e.toBackupJson()).toList(),
+        'accountTransfers': transfers.map((e) => e.toBackupJson()).toList(),
       };
 
       final jsonStr = const JsonEncoder.withIndent('  ').convert(payload);
@@ -114,6 +117,7 @@ class BackupService {
         'journalEntries': 0,
         'wishlist': 0,
         'liabilities': 0,
+        'accountTransfers': 0,
       };
 
       await _isar.writeTxn(() async {
@@ -254,6 +258,21 @@ class BackupService {
           if (existing == null) {
             await _isar.liabilityItems.put(liabilityItemFromBackupJson(j));
             counts['liabilities'] = counts['liabilities']! + 1;
+          }
+        }
+
+        // Account transfers
+        final transferList = (json['accountTransfers'] as List<dynamic>? ?? [])
+            .cast<Map<String, dynamic>>();
+        for (final j in transferList) {
+          final uuid = j['uuid'] as String;
+          final existing = await _isar.accountTransfers
+              .filter()
+              .uuidEqualTo(uuid)
+              .findFirst();
+          if (existing == null) {
+            await _isar.accountTransfers.put(accountTransferFromBackupJson(j));
+            counts['accountTransfers'] = counts['accountTransfers']! + 1;
           }
         }
       });

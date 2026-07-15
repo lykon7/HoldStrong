@@ -8,6 +8,7 @@ import '../../data/models/recurring_transaction.dart';
 import '../../data/models/journal_entry.dart';
 import '../../data/models/wishlist_item.dart';
 import '../../data/models/liability_item.dart';
+import '../../data/models/account_transfer.dart';
 
 // ─── Goal ────────────────────────────────────────────────────────────────────
 
@@ -266,3 +267,27 @@ LiabilityItem liabilityItemFromBackupJson(Map<String, dynamic> j) {
     ..createdAt = DateTime.parse(j['createdAt'] as String)
     ..linkedFundUuid = j['linkedFundUuid'] as String?;
 }
+
+// ─── AccountTransfer ─────────────────────────────────────────────────────────
+
+extension AccountTransferBackup on AccountTransfer {
+  Map<String, dynamic> toBackupJson() => {
+        'uuid': uuid,
+        'fromFundUuid': fromFundUuid,
+        'toFundUuid': toFundUuid,
+        'amount': amount,
+        'note': note,
+        'transferAt': transferAt.toIso8601String(),
+      };
+}
+
+AccountTransfer accountTransferFromBackupJson(Map<String, dynamic> j) {
+  return AccountTransfer()
+    ..uuid = j['uuid'] as String
+    ..fromFundUuid = j['fromFundUuid'] as String
+    ..toFundUuid = j['toFundUuid'] as String
+    ..amount = (j['amount'] as num).toDouble()
+    ..note = j['note'] as String?
+    ..transferAt = DateTime.parse(j['transferAt'] as String);
+}
+

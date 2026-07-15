@@ -2,6 +2,7 @@ import 'package:isar/isar.dart';
 import 'models/goal.dart';
 import 'models/resist_entry.dart';
 import 'models/craving_label.dart';
+import 'models/account_transfer.dart';
 
 class IsarService {
   IsarService._();

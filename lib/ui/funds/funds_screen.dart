@@ -5,7 +5,9 @@ import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/theme.dart';
 import '../../data/models/fund_account.dart';
+import '../../data/models/account_transfer.dart';
 import '../../domain/providers/fund_providers.dart';
+import '../../domain/providers/account_transfer_providers.dart';
 
 // Palette cycled for fund colours
 const _kPalette = [
@@ -19,13 +21,21 @@ const _kPalette = [
   Color(0xFF1ABC9C), // mint
 ];
 
-class FundsScreen extends ConsumerWidget {
+class FundsScreen extends ConsumerStatefulWidget {
   const FundsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<FundsScreen> createState() => _FundsScreenState();
+}
+
+class _FundsScreenState extends ConsumerState<FundsScreen> {
+  int _selectedTab = 0; // 0 = Accounts, 1 = Transfers
+
+  @override
+  Widget build(BuildContext context) {
     final accounts = ref.watch(allFundAccountsProvider);
     final balances = ref.watch(fundBalancesProvider);
+    final transfersAsync = ref.watch(allAccountTransfersProvider);
     final fmt = NumberFormat('#,##0.00', 'en_US');
 
     return Scaffold(
@@ -33,6 +43,11 @@ class FundsScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('FUNDS'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.swap_horiz, size: 22),
+            tooltip: 'Transfer Funds',
+            onPressed: () => _showTransferSheet(context, ref),
+          ),
           IconButton(
             icon: const Icon(Icons.add, size: 22),
             tooltip: 'Add Fund',
@@ -80,26 +95,82 @@ class FundsScreen extends ConsumerWidget {
                 fmt: fmt,
               ),
               const Divider(height: 1),
-              Expanded(
-                child: ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-                  itemCount: accountList.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
-                  itemBuilder: (context, index) {
-                    final acc = accountList[index];
-                    final balance = balances[acc.uuid] ?? 0.0;
-                    return _FundCard(
-                      account: acc,
-                      balance: balance,
-                      fmt: fmt,
-                      color: colours[index],
-                      onDelete: () => ref
-                          .read(fundRepositoryProvider)
-                          .deleteAccount(acc.uuid),
-                      onEdit: () => _showEditFundSheet(context, ref, acc),
-                    );
-                  },
+              // Segmented switch / tab bar
+              Container(
+                color: AppColors.backgroundSurface,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _TabButton(
+                        label: 'ACCOUNTS (${accountList.length})',
+                        isSelected: _selectedTab == 0,
+                        onTap: () => setState(() => _selectedTab = 0),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _TabButton(
+                        label: 'TRANSFERS',
+                        isSelected: _selectedTab == 1,
+                        onTap: () => setState(() => _selectedTab = 1),
+                      ),
+                    ),
+                  ],
                 ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: _selectedTab == 0
+                    ? ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                        itemCount: accountList.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        itemBuilder: (context, index) {
+                          final acc = accountList[index];
+                          final balance = balances[acc.uuid] ?? 0.0;
+                          return _FundCard(
+                            account: acc,
+                            balance: balance,
+                            fmt: fmt,
+                            color: colours[index],
+                            onDelete: () => ref
+                                .read(fundRepositoryProvider)
+                                .deleteAccount(acc.uuid),
+                            onEdit: () => _showEditFundSheet(context, ref, acc),
+                          );
+                        },
+                      )
+                    : transfersAsync.when(
+                        loading: () => const Center(
+                          child: CircularProgressIndicator(color: AppColors.accentGold),
+                        ),
+                        error: (e, _) => Center(child: Text('Error: $e')),
+                        data: (transferList) {
+                          if (transferList.isEmpty) {
+                            return const _TransfersEmptyState();
+                          }
+                          final accountMap = {for (var a in accountList) a.uuid: a};
+                          return ListView.separated(
+                            padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                            itemCount: transferList.length,
+                            separatorBuilder: (_, __) => const SizedBox(height: 10),
+                            itemBuilder: (context, index) {
+                              final t = transferList[index];
+                              return _TransferCard(
+                                transfer: t,
+                                fromAccount: accountMap[t.fromFundUuid],
+                                toAccount: accountMap[t.toFundUuid],
+                                fmt: fmt,
+                                onDelete: () => ref
+                                    .read(accountTransferRepositoryProvider)
+                                    .deleteTransfer(t.uuid),
+                                onEdit: () => _showEditTransferSheet(context, ref, t),
+                              );
+                            },
+                          );
+                        },
+                      ),
               ),
             ],
           );
@@ -136,6 +207,37 @@ class FundsScreen extends ConsumerWidget {
       builder: (_) => ProviderScope(
         parent: ProviderScope.containerOf(context),
         child: _EditFundSheet(account: account),
+      ),
+    );
+  }
+
+  void _showTransferSheet(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.backgroundSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(4)),
+      ),
+      builder: (_) => ProviderScope(
+        parent: ProviderScope.containerOf(context),
+        child: const _TransferSheet(),
+      ),
+    );
+  }
+
+  void _showEditTransferSheet(
+      BuildContext context, WidgetRef ref, AccountTransfer transfer) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.backgroundSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(4)),
+      ),
+      builder: (_) => ProviderScope(
+        parent: ProviderScope.containerOf(context),
+        child: _EditTransferSheet(transfer: transfer),
       ),
     );
   }
@@ -966,3 +1068,963 @@ class _EditFundSheetState extends ConsumerState<_EditFundSheet> {
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tab Button
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _TabButton extends StatelessWidget {
+  const _TabButton({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.accentGold.withValues(alpha: 0.15)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(
+            color: isSelected ? AppColors.accentGold : AppColors.cardBorder,
+          ),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'Rajdhani',
+            fontWeight: FontWeight.w700,
+            fontSize: 13,
+            letterSpacing: 1.2,
+            color: isSelected ? AppColors.accentGold : AppColors.textSecondary,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Transfers Empty State
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _TransfersEmptyState extends StatelessWidget {
+  const _TransfersEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.swap_horiz, size: 48, color: AppColors.textSecondary),
+            const SizedBox(height: 16),
+            const Text(
+              'NO RECENT TRANSFERS',
+              style: TextStyle(
+                fontFamily: 'Rajdhani',
+                fontWeight: FontWeight.w700,
+                fontSize: 18,
+                letterSpacing: 1.5,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Move funds between accounts easily.\nTap the ⇄ icon in the top right to start a transfer.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'IBMPlexMono',
+                fontSize: 12,
+                color: AppColors.textSecondary,
+                height: 1.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Transfer Card
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _TransferCard extends StatelessWidget {
+  const _TransferCard({
+    required this.transfer,
+    required this.fromAccount,
+    required this.toAccount,
+    required this.fmt,
+    required this.onDelete,
+    required this.onEdit,
+  });
+
+  final AccountTransfer transfer;
+  final FundAccount? fromAccount;
+  final FundAccount? toAccount;
+  final NumberFormat fmt;
+  final VoidCallback onDelete;
+  final VoidCallback onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    final fromName = fromAccount?.name ?? 'Unknown Account';
+    final toName = toAccount?.name ?? 'Unknown Account';
+
+    return Dismissible(
+      key: Key('transfer-${transfer.uuid}'),
+      confirmDismiss: (direction) async {
+        if (direction == DismissDirection.endToStart) {
+          return showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              backgroundColor: AppColors.backgroundSurface,
+              title: const Text(
+                'DELETE TRANSFER?',
+                style: TextStyle(
+                  fontFamily: 'Rajdhani',
+                  fontWeight: FontWeight.w700,
+                  fontSize: 18,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              content: const Text(
+                'Deleting will reverse this transfer and adjust both account balances accordingly.',
+                style: TextStyle(
+                  fontFamily: 'IBMPlexMono',
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('CANCEL'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.destructive,
+                  ),
+                  child: const Text('DELETE'),
+                ),
+              ],
+            ),
+          );
+        } else if (direction == DismissDirection.startToEnd) {
+          onEdit();
+          return false;
+        }
+        return false;
+      },
+      background: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF4A90D9).withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: const Color(0xFF4A90D9)),
+        ),
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.only(left: 16),
+        child: const Icon(Icons.edit, color: Color(0xFF4A90D9)),
+      ),
+      secondaryBackground: Container(
+        decoration: BoxDecoration(
+          color: AppColors.destructive.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: AppColors.destructive),
+        ),
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 16),
+        child: const Icon(Icons.delete_outline, color: AppColors.destructive),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.backgroundSurface,
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: AppColors.cardBorder),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: const Color(0xFF4A90D9).withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: const Color(0xFF4A90D9)),
+              ),
+              alignment: Alignment.center,
+              child: const Icon(
+                Icons.swap_horiz,
+                color: Color(0xFF4A90D9),
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          fromName,
+                          style: const TextStyle(
+                            fontFamily: 'Rajdhani',
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            color: AppColors.textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 6),
+                        child: Icon(
+                          Icons.arrow_forward,
+                          size: 14,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      Flexible(
+                        child: Text(
+                          toName,
+                          style: const TextStyle(
+                            fontFamily: 'Rajdhani',
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            color: AppColors.textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (transfer.note != null && transfer.note!.isNotEmpty) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      transfer.note!,
+                      style: const TextStyle(
+                        fontFamily: 'IBMPlexMono',
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  'RS ${fmt.format(transfer.amount)}',
+                  style: const TextStyle(
+                    fontFamily: 'IBMPlexMono',
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                    color: Color(0xFF4A90D9),
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  DateFormat('d MMM, HH:mm').format(transfer.transferAt),
+                  style: const TextStyle(
+                    fontFamily: 'IBMPlexMono',
+                    fontSize: 10,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Transfer Sheet
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _TransferSheet extends ConsumerStatefulWidget {
+  const _TransferSheet();
+
+  @override
+  ConsumerState<_TransferSheet> createState() => _TransferSheetState();
+}
+
+class _TransferSheetState extends ConsumerState<_TransferSheet> {
+  String? _fromFundUuid;
+  String? _toFundUuid;
+  final _amountCtrl = TextEditingController();
+  final _noteCtrl = TextEditingController();
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _amountCtrl.dispose();
+    _noteCtrl.dispose();
+    super.dispose();
+  }
+
+  void _initAccounts(List<FundAccount> accounts) {
+    if (_fromFundUuid == null && accounts.isNotEmpty) {
+      _fromFundUuid = accounts[0].uuid;
+      if (accounts.length > 1) {
+        _toFundUuid = accounts[1].uuid;
+      }
+    }
+  }
+
+  Future<void> _save() async {
+    final amt = double.tryParse(_amountCtrl.text.trim());
+    if (amt == null || amt <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('ENTER A VALID AMOUNT'),
+          backgroundColor: AppColors.destructive,
+        ),
+      );
+      return;
+    }
+    if (_fromFundUuid == null || _toFundUuid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('SELECT SOURCE AND DESTINATION ACCOUNTS'),
+          backgroundColor: AppColors.destructive,
+        ),
+      );
+      return;
+    }
+    if (_fromFundUuid == _toFundUuid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('CANNOT TRANSFER TO THE SAME ACCOUNT'),
+          backgroundColor: AppColors.destructive,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _saving = true);
+    try {
+      final transfer = AccountTransfer()
+        ..uuid = const Uuid().v4()
+        ..fromFundUuid = _fromFundUuid!
+        ..toFundUuid = _toFundUuid!
+        ..amount = amt
+        ..note = _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim()
+        ..transferAt = DateTime.now();
+
+      await ref.read(accountTransferRepositoryProvider).saveTransfer(transfer);
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('ERROR: $e'), backgroundColor: AppColors.destructive),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final accounts = ref.watch(allFundAccountsProvider).value ?? [];
+    final balances = ref.watch(fundBalancesProvider);
+    final fmt = NumberFormat('#,##0.00', 'en_US');
+
+    _initAccounts(accounts);
+
+    if (accounts.length < 2) {
+      return Padding(
+        padding: EdgeInsets.only(
+          left: 20, right: 20, top: 24,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, size: 40, color: AppColors.accentGold),
+            const SizedBox(height: 16),
+            const Text(
+              'MORE ACCOUNTS NEEDED',
+              style: TextStyle(
+                fontFamily: 'Rajdhani',
+                fontWeight: FontWeight.w700,
+                fontSize: 18,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'You need at least 2 fund accounts created to transfer funds between them.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'IBMPlexMono',
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('GOT IT'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final fromBalance = balances[_fromFundUuid] ?? 0.0;
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20, right: 20, top: 24,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'TRANSFER FUNDS',
+                style: TextStyle(
+                  fontFamily: 'Rajdhani',
+                  fontWeight: FontWeight.w700,
+                  fontSize: 18,
+                  letterSpacing: 1.5,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close, size: 20),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // From Account Selector
+          const Text(
+            'FROM ACCOUNT',
+            style: TextStyle(
+              fontFamily: 'IBMPlexMono',
+              fontSize: 10,
+              color: AppColors.textSecondary,
+              letterSpacing: 1.0,
+            ),
+          ),
+          const SizedBox(height: 6),
+          DropdownButtonFormField<String>(
+            value: _fromFundUuid,
+            dropdownColor: AppColors.backgroundSurface,
+            style: const TextStyle(
+              fontFamily: 'Rajdhani',
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+              color: AppColors.textPrimary,
+            ),
+            decoration: const InputDecoration(
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            ),
+            items: accounts.map((acc) {
+              final bal = balances[acc.uuid] ?? 0.0;
+              return DropdownMenuItem(
+                value: acc.uuid,
+                child: Text('${acc.name} (RS ${fmt.format(bal)})'),
+              );
+            }).toList(),
+            onChanged: (val) {
+              if (val != null) {
+                setState(() {
+                  _fromFundUuid = val;
+                  if (_toFundUuid == val) {
+                    final other = accounts.firstWhere((a) => a.uuid != val, orElse: () => accounts.first);
+                    _toFundUuid = other.uuid != val ? other.uuid : null;
+                  }
+                });
+              }
+            },
+          ),
+          const SizedBox(height: 16),
+          // To Account Selector
+          const Text(
+            'TO ACCOUNT',
+            style: TextStyle(
+              fontFamily: 'IBMPlexMono',
+              fontSize: 10,
+              color: AppColors.textSecondary,
+              letterSpacing: 1.0,
+            ),
+          ),
+          const SizedBox(height: 6),
+          DropdownButtonFormField<String>(
+            value: _toFundUuid,
+            dropdownColor: AppColors.backgroundSurface,
+            style: const TextStyle(
+              fontFamily: 'Rajdhani',
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+              color: AppColors.textPrimary,
+            ),
+            decoration: const InputDecoration(
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            ),
+            items: accounts.where((acc) => acc.uuid != _fromFundUuid).map((acc) {
+              final bal = balances[acc.uuid] ?? 0.0;
+              return DropdownMenuItem(
+                value: acc.uuid,
+                child: Text('${acc.name} (RS ${fmt.format(bal)})'),
+              );
+            }).toList(),
+            onChanged: (val) {
+              if (val != null) {
+                setState(() => _toFundUuid = val);
+              }
+            },
+          ),
+          const SizedBox(height: 16),
+          // Amount & Quick buttons
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'AMOUNT (LKR)',
+                style: TextStyle(
+                  fontFamily: 'IBMPlexMono',
+                  fontSize: 10,
+                  color: AppColors.textSecondary,
+                  letterSpacing: 1.0,
+                ),
+              ),
+              Text(
+                'AVAIL: RS ${fmt.format(fromBalance)}',
+                style: const TextStyle(
+                  fontFamily: 'IBMPlexMono',
+                  fontSize: 10,
+                  color: Color(0xFF4A90D9),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _amountCtrl,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            style: const TextStyle(
+              fontFamily: 'IBMPlexMono',
+              fontSize: 15,
+              color: AppColors.textPrimary,
+            ),
+            decoration: const InputDecoration(
+              hintText: '0.00',
+              prefixText: 'RS  ',
+              prefixStyle: TextStyle(
+                fontFamily: 'IBMPlexMono',
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _QuickChip(label: '25%', onTap: () {
+                  _amountCtrl.text = (fromBalance * 0.25).toStringAsFixed(2);
+                }),
+                const SizedBox(width: 6),
+                _QuickChip(label: '50%', onTap: () {
+                  _amountCtrl.text = (fromBalance * 0.50).toStringAsFixed(2);
+                }),
+                const SizedBox(width: 6),
+                _QuickChip(label: 'MAX', onTap: () {
+                  _amountCtrl.text = fromBalance.toStringAsFixed(2);
+                }),
+                const SizedBox(width: 6),
+                _QuickChip(label: 'RS 1,000', onTap: () {
+                  _amountCtrl.text = '1000';
+                }),
+                const SizedBox(width: 6),
+                _QuickChip(label: 'RS 5,000', onTap: () {
+                  _amountCtrl.text = '5000';
+                }),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Note
+          const Text(
+            'NOTE (OPTIONAL)',
+            style: TextStyle(
+              fontFamily: 'IBMPlexMono',
+              fontSize: 10,
+              color: AppColors.textSecondary,
+              letterSpacing: 1.0,
+            ),
+          ),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _noteCtrl,
+            style: const TextStyle(
+              fontFamily: 'IBMPlexMono',
+              fontSize: 13,
+              color: AppColors.textPrimary,
+            ),
+            decoration: const InputDecoration(
+              hintText: 'e.g. ATM withdrawal, savings deposit',
+            ),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: _saving ? null : _save,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4A90D9),
+            ),
+            child: _saving
+                ? const SizedBox(
+                    width: 20, height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.backgroundPrimary,
+                    ),
+                  )
+                : const Text('TRANSFER FUNDS'),
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickChip extends StatelessWidget {
+  const _QuickChip({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppColors.backgroundElevated,
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: AppColors.cardBorder),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontFamily: 'IBMPlexMono',
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF4A90D9),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Edit Transfer Sheet
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _EditTransferSheet extends ConsumerStatefulWidget {
+  const _EditTransferSheet({required this.transfer});
+
+  final AccountTransfer transfer;
+
+  @override
+  ConsumerState<_EditTransferSheet> createState() => _EditTransferSheetState();
+}
+
+class _EditTransferSheetState extends ConsumerState<_EditTransferSheet> {
+  late String _fromFundUuid;
+  late String _toFundUuid;
+  late TextEditingController _amountCtrl;
+  late TextEditingController _noteCtrl;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fromFundUuid = widget.transfer.fromFundUuid;
+    _toFundUuid = widget.transfer.toFundUuid;
+    _amountCtrl = TextEditingController(text: widget.transfer.amount.toStringAsFixed(2));
+    _noteCtrl = TextEditingController(text: widget.transfer.note ?? '');
+  }
+
+  @override
+  void dispose() {
+    _amountCtrl.dispose();
+    _noteCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final amt = double.tryParse(_amountCtrl.text.trim());
+    if (amt == null || amt <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('ENTER A VALID AMOUNT'),
+          backgroundColor: AppColors.destructive,
+        ),
+      );
+      return;
+    }
+    if (_fromFundUuid == _toFundUuid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('CANNOT TRANSFER TO THE SAME ACCOUNT'),
+          backgroundColor: AppColors.destructive,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _saving = true);
+    try {
+      await ref.read(accountTransferRepositoryProvider).updateTransfer(
+            uuid: widget.transfer.uuid,
+            fromFundUuid: _fromFundUuid,
+            toFundUuid: _toFundUuid,
+            amount: amt,
+            note: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(),
+            transferAt: widget.transfer.transferAt,
+          );
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('ERROR: $e'), backgroundColor: AppColors.destructive),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final accounts = ref.watch(allFundAccountsProvider).value ?? [];
+    final balances = ref.watch(fundBalancesProvider);
+    final fmt = NumberFormat('#,##0.00', 'en_US');
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20, right: 20, top: 24,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'EDIT TRANSFER',
+                style: TextStyle(
+                  fontFamily: 'Rajdhani',
+                  fontWeight: FontWeight.w700,
+                  fontSize: 18,
+                  letterSpacing: 1.5,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close, size: 20),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // From Account Selector
+          const Text(
+            'FROM ACCOUNT',
+            style: TextStyle(
+              fontFamily: 'IBMPlexMono',
+              fontSize: 10,
+              color: AppColors.textSecondary,
+              letterSpacing: 1.0,
+            ),
+          ),
+          const SizedBox(height: 6),
+          DropdownButtonFormField<String>(
+            value: _fromFundUuid,
+            dropdownColor: AppColors.backgroundSurface,
+            style: const TextStyle(
+              fontFamily: 'Rajdhani',
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+              color: AppColors.textPrimary,
+            ),
+            decoration: const InputDecoration(
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            ),
+            items: accounts.map((acc) {
+              final bal = balances[acc.uuid] ?? 0.0;
+              return DropdownMenuItem(
+                value: acc.uuid,
+                child: Text('${acc.name} (RS ${fmt.format(bal)})'),
+              );
+            }).toList(),
+            onChanged: (val) {
+              if (val != null) {
+                setState(() {
+                  _fromFundUuid = val;
+                  if (_toFundUuid == val) {
+                    final other = accounts.firstWhere((a) => a.uuid != val, orElse: () => accounts.first);
+                    _toFundUuid = other.uuid != val ? other.uuid : _toFundUuid;
+                  }
+                });
+              }
+            },
+          ),
+          const SizedBox(height: 16),
+          // To Account Selector
+          const Text(
+            'TO ACCOUNT',
+            style: TextStyle(
+              fontFamily: 'IBMPlexMono',
+              fontSize: 10,
+              color: AppColors.textSecondary,
+              letterSpacing: 1.0,
+            ),
+          ),
+          const SizedBox(height: 6),
+          DropdownButtonFormField<String>(
+            value: _toFundUuid,
+            dropdownColor: AppColors.backgroundSurface,
+            style: const TextStyle(
+              fontFamily: 'Rajdhani',
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+              color: AppColors.textPrimary,
+            ),
+            decoration: const InputDecoration(
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            ),
+            items: accounts.where((acc) => acc.uuid != _fromFundUuid).map((acc) {
+              final bal = balances[acc.uuid] ?? 0.0;
+              return DropdownMenuItem(
+                value: acc.uuid,
+                child: Text('${acc.name} (RS ${fmt.format(bal)})'),
+              );
+            }).toList(),
+            onChanged: (val) {
+              if (val != null) {
+                setState(() => _toFundUuid = val);
+              }
+            },
+          ),
+          const SizedBox(height: 16),
+          // Amount
+          const Text(
+            'AMOUNT (LKR)',
+            style: TextStyle(
+              fontFamily: 'IBMPlexMono',
+              fontSize: 10,
+              color: AppColors.textSecondary,
+              letterSpacing: 1.0,
+            ),
+          ),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _amountCtrl,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            style: const TextStyle(
+              fontFamily: 'IBMPlexMono',
+              fontSize: 15,
+              color: AppColors.textPrimary,
+            ),
+            decoration: const InputDecoration(
+              hintText: '0.00',
+              prefixText: 'RS  ',
+              prefixStyle: TextStyle(
+                fontFamily: 'IBMPlexMono',
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Note
+          const Text(
+            'NOTE (OPTIONAL)',
+            style: TextStyle(
+              fontFamily: 'IBMPlexMono',
+              fontSize: 10,
+              color: AppColors.textSecondary,
+              letterSpacing: 1.0,
+            ),
+          ),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _noteCtrl,
+            style: const TextStyle(
+              fontFamily: 'IBMPlexMono',
+              fontSize: 13,
+              color: AppColors.textPrimary,
+            ),
+            decoration: const InputDecoration(
+              hintText: 'e.g. ATM withdrawal, savings deposit',
+            ),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: _saving ? null : _save,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4A90D9),
+            ),
+            child: _saving
+                ? const SizedBox(
+                    width: 20, height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.backgroundPrimary,
+                    ),
+                  )
+                : const Text('SAVE CHANGES'),
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+}
+

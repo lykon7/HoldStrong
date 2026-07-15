@@ -20,6 +20,7 @@ import 'data/models/wishlist_item.dart';
 import 'data/models/workout_entry.dart';
 import 'data/models/todo_item.dart';
 import 'data/models/liability_item.dart';
+import 'data/models/account_transfer.dart';
 import 'domain/providers/goal_providers.dart';
 import 'domain/providers/recalibration_provider.dart';
 
@@ -42,6 +43,7 @@ void main() async {
       WorkoutEntrySchema,
       TodoItemSchema,
       LiabilityItemSchema,
+      AccountTransferSchema,
     ],
     directory: dir.path,
     name: AppConstants.kIsarDbName,
