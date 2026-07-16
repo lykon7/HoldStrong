@@ -42,6 +42,8 @@ class _FundsScreenState extends ConsumerState<FundsScreen> {
       backgroundColor: AppColors.backgroundPrimary,
       appBar: AppBar(
         title: const Text('FUNDS'),
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         actions: [
           IconButton(
             icon: const Icon(Icons.swap_horiz, size: 22),
