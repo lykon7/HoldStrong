@@ -140,6 +140,9 @@ class _FundsScreenState extends ConsumerState<FundsScreen> {
                                 .read(fundRepositoryProvider)
                                 .deleteAccount(acc.uuid),
                             onEdit: () => _showEditFundSheet(context, ref, acc),
+                            onCountCash: acc.name.toLowerCase().contains('cash')
+                                ? () => _showCashCounterSheet(context, ref, acc)
+                                : null,
                           );
                         },
                       )
@@ -243,6 +246,22 @@ class _FundsScreenState extends ConsumerState<FundsScreen> {
       ),
     );
   }
+
+  void _showCashCounterSheet(
+      BuildContext context, WidgetRef ref, FundAccount account) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.backgroundSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(4)),
+      ),
+      builder: (_) => ProviderScope(
+        parent: ProviderScope.containerOf(context),
+        child: _CashCounterSheet(account: account),
+      ),
+    );
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -257,6 +276,7 @@ class _FundCard extends StatelessWidget {
     required this.color,
     required this.onDelete,
     required this.onEdit,
+    this.onCountCash,
   });
 
   final FundAccount account;
@@ -265,6 +285,7 @@ class _FundCard extends StatelessWidget {
   final Color color;
   final VoidCallback onDelete;
   final VoidCallback onEdit;
+  final VoidCallback? onCountCash;
 
   @override
   Widget build(BuildContext context) {
@@ -411,6 +432,38 @@ class _FundCard extends StatelessWidget {
                       color: AppColors.destructive,
                     ),
                   ),
+                if (onCountCash != null) ...[
+                  const SizedBox(height: 6),
+                  GestureDetector(
+                    onTap: onCountCash,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.accentGold.withValues(alpha: 0.15),
+                        border: Border.all(color: AppColors.accentGold),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.calculate_outlined,
+                              size: 13, color: AppColors.accentGold),
+                          SizedBox(width: 4),
+                          Text(
+                            'COUNT CASH',
+                            style: TextStyle(
+                              fontFamily: 'IBMPlexMono',
+                              fontWeight: FontWeight.w600,
+                              fontSize: 10,
+                              color: AppColors.accentGold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ],
@@ -2026,6 +2079,385 @@ class _EditTransferSheetState extends ConsumerState<_EditTransferSheet> {
           const SizedBox(height: 8),
         ],
       ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Quick Cash Counter / Configurator Sheet
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _CashCounterSheet extends ConsumerStatefulWidget {
+  const _CashCounterSheet({required this.account});
+
+  final FundAccount account;
+
+  @override
+  ConsumerState<_CashCounterSheet> createState() => _CashCounterSheetState();
+}
+
+class _CashCounterSheetState extends ConsumerState<_CashCounterSheet> {
+  late final TextEditingController _largeNotesCtrl;
+  late final TextEditingController _hundredsCtrl;
+  late final TextEditingController _fiftiesCtrl;
+  late final TextEditingController _twentiesCtrl;
+
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _largeNotesCtrl = TextEditingController()..addListener(_onInputChanged);
+    _hundredsCtrl = TextEditingController()..addListener(_onInputChanged);
+    _fiftiesCtrl = TextEditingController()..addListener(_onInputChanged);
+    _twentiesCtrl = TextEditingController()..addListener(_onInputChanged);
+  }
+
+  void _onInputChanged() {
+    setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _largeNotesCtrl.dispose();
+    _hundredsCtrl.dispose();
+    _fiftiesCtrl.dispose();
+    _twentiesCtrl.dispose();
+    super.dispose();
+  }
+
+  double get _largeValue =>
+      double.tryParse(_largeNotesCtrl.text.trim()) ?? 0.0;
+  int get _hundredsCount =>
+      int.tryParse(_hundredsCtrl.text.trim()) ?? 0;
+  int get _fiftiesCount =>
+      int.tryParse(_fiftiesCtrl.text.trim()) ?? 0;
+  int get _twentiesCount =>
+      int.tryParse(_twentiesCtrl.text.trim()) ?? 0;
+
+  double get _totalCash =>
+      _largeValue +
+      (_hundredsCount * 100.0) +
+      (_fiftiesCount * 50.0) +
+      (_twentiesCount * 20.0);
+
+  Future<void> _save() async {
+    setState(() => _saving = true);
+    try {
+      final currentBalance =
+          ref.read(fundBalancesProvider)[widget.account.uuid] ??
+              widget.account.openingBalance;
+      final netTransactions = currentBalance - widget.account.openingBalance;
+      final newOpeningBalance = _totalCash - netTransactions;
+
+      await ref.read(fundRepositoryProvider).updateAccount(
+            uuid: widget.account.uuid,
+            name: widget.account.name,
+            openingBalance: newOpeningBalance,
+          );
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('ERROR: $e'),
+              backgroundColor: AppColors.destructive),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final fmt = NumberFormat('#,##0.00', 'en_US');
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20, right: 20, top: 16,
+        bottom: keyboardHeight + 24,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 36, height: 3,
+                decoration: BoxDecoration(
+                  color: AppColors.cardBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    'CASH CONFIGURATOR (${widget.account.name.toUpperCase()})',
+                    style: const TextStyle(
+                      fontFamily: 'Rajdhani',
+                      fontWeight: FontWeight.w700,
+                      fontSize: 18,
+                      letterSpacing: 1.5,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, size: 20),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const Divider(height: 24),
+            const _SheetLabel('LARGE DENOMINATIONS (500 / 1000 / 5000 NOTES)'),
+            const SizedBox(height: 6),
+            TextField(
+              controller: _largeNotesCtrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              style: const TextStyle(
+                fontFamily: 'Rajdhani',
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
+                color: AppColors.textPrimary,
+              ),
+              decoration: const InputDecoration(
+                hintText: 'Enter total value of large notes',
+                prefixText: 'Rs ',
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const _SheetLabel('100 LKR NOTES'),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: _hundredsCtrl,
+                        keyboardType: TextInputType.number,
+                        style: const TextStyle(
+                          fontFamily: 'Rajdhani',
+                          fontWeight: FontWeight.w600,
+                          fontSize: 18,
+                          color: AppColors.textPrimary,
+                        ),
+                        decoration: const InputDecoration(
+                          hintText: 'Count',
+                          prefixText: '× ',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const _SheetLabel('50 LKR NOTES'),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: _fiftiesCtrl,
+                        keyboardType: TextInputType.number,
+                        style: const TextStyle(
+                          fontFamily: 'Rajdhani',
+                          fontWeight: FontWeight.w600,
+                          fontSize: 18,
+                          color: AppColors.textPrimary,
+                        ),
+                        decoration: const InputDecoration(
+                          hintText: 'Count',
+                          prefixText: '× ',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const _SheetLabel('20 LKR NOTES'),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: _twentiesCtrl,
+                        keyboardType: TextInputType.number,
+                        style: const TextStyle(
+                          fontFamily: 'Rajdhani',
+                          fontWeight: FontWeight.w600,
+                          fontSize: 18,
+                          color: AppColors.textPrimary,
+                        ),
+                        decoration: const InputDecoration(
+                          hintText: 'Count',
+                          prefixText: '× ',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            // Breakdown Summary Box
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.backgroundElevated,
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: AppColors.cardBorder),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _BreakdownRow(
+                    label: 'Large Notes',
+                    subtext: _largeValue > 0 ? '(500s / 1000s / 5000s)' : null,
+                    amount: _largeValue,
+                    fmt: fmt,
+                  ),
+                  if (_hundredsCount > 0) ...[
+                    const SizedBox(height: 8),
+                    _BreakdownRow(
+                      label: '100 LKR Notes',
+                      subtext: '($_hundredsCount * 100 note)',
+                      amount: _hundredsCount * 100.0,
+                      fmt: fmt,
+                    ),
+                  ],
+                  if (_fiftiesCount > 0) ...[
+                    const SizedBox(height: 8),
+                    _BreakdownRow(
+                      label: '50 LKR Notes',
+                      subtext: '($_fiftiesCount * 50 note)',
+                      amount: _fiftiesCount * 50.0,
+                      fmt: fmt,
+                    ),
+                  ],
+                  if (_twentiesCount > 0) ...[
+                    const SizedBox(height: 8),
+                    _BreakdownRow(
+                      label: '20 LKR Notes',
+                      subtext: '($_twentiesCount * 20 note)',
+                      amount: _twentiesCount * 20.0,
+                      fmt: fmt,
+                    ),
+                  ],
+                  const Divider(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'CASH TOTAL',
+                        style: TextStyle(
+                          fontFamily: 'Rajdhani',
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                          letterSpacing: 1.5,
+                          color: AppColors.accentGold,
+                        ),
+                      ),
+                      Text(
+                        'Rs ${fmt.format(_totalCash)}',
+                        style: const TextStyle(
+                          fontFamily: 'Rajdhani',
+                          fontWeight: FontWeight.w700,
+                          fontSize: 20,
+                          color: AppColors.accentGold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _saving ? null : _save,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accentGold,
+                foregroundColor: AppColors.backgroundPrimary,
+              ),
+              child: _saving
+                  ? const SizedBox(
+                      width: 20, height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.backgroundPrimary,
+                      ),
+                    )
+                  : Text('UPDATE CASH BALANCE (RS ${fmt.format(_totalCash)})',
+                      style: const TextStyle(fontWeight: FontWeight.w700)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BreakdownRow extends StatelessWidget {
+  const _BreakdownRow({
+    required this.label,
+    this.subtext,
+    required this.amount,
+    required this.fmt,
+  });
+
+  final String label;
+  final String? subtext;
+  final double amount;
+  final NumberFormat fmt;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Row(
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontFamily: 'IBMPlexMono',
+                  fontSize: 12,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              if (subtext != null) ...[
+                const SizedBox(width: 6),
+                Text(
+                  subtext!,
+                  style: const TextStyle(
+                    fontFamily: 'IBMPlexMono',
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        Text(
+          fmt.format(amount),
+          style: const TextStyle(
+            fontFamily: 'Rajdhani',
+            fontWeight: FontWeight.w600,
+            fontSize: 15,
+            color: AppColors.textPrimary,
+          ),
+        ),
+      ],
     );
   }
 }
