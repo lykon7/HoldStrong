@@ -26,12 +26,22 @@ class TransactionsScreen extends ConsumerStatefulWidget {
 }
 
 class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
+  bool _showSearch = false;
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _searchQuery = '';
+
   @override
   void initState() {
     super.initState();
     Future.microtask(() => ref
         .read(recurringTransactionRepositoryProvider)
         .materializeDueEntries());
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
   @override
@@ -56,6 +66,19 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         actions: [
+          IconButton(
+            icon: Icon(_showSearch ? Icons.search_off : Icons.search, size: 20),
+            tooltip: _showSearch ? 'Close Search' : 'Search Transactions',
+            onPressed: () {
+              setState(() {
+                _showSearch = !_showSearch;
+                if (!_showSearch) {
+                  _searchCtrl.clear();
+                  _searchQuery = '';
+                }
+              });
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.repeat, size: 20),
             tooltip: 'Recurring',
@@ -83,6 +106,60 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
             lastMonthExpense: lastMonthExpense,
           ),
           const Divider(height: 1),
+          if (_showSearch)
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              color: AppColors.backgroundSurface,
+              child: TextField(
+                controller: _searchCtrl,
+                autofocus: true,
+                onChanged: (val) =>
+                    setState(() => _searchQuery = val.trim().toLowerCase()),
+                style: const TextStyle(
+                  fontFamily: 'IBMPlexMono',
+                  fontSize: 13,
+                  color: AppColors.textPrimary,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Search by keyword (source, purpose, amount)...',
+                  hintStyle: const TextStyle(
+                    fontFamily: 'IBMPlexMono',
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                  prefixIcon: const Icon(Icons.search,
+                      size: 18, color: AppColors.textSecondary),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear,
+                              size: 18, color: AppColors.textSecondary),
+                          onPressed: () {
+                            _searchCtrl.clear();
+                            setState(() => _searchQuery = '');
+                          },
+                        )
+                      : null,
+                  isDense: true,
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  filled: true,
+                  fillColor: AppColors.backgroundElevated,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(2),
+                    borderSide: const BorderSide(color: AppColors.cardBorder),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(2),
+                    borderSide: const BorderSide(color: AppColors.cardBorder),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(2),
+                    borderSide: const BorderSide(color: AppColors.accentGold),
+                  ),
+                ),
+              ),
+            ),
+          if (_showSearch) const Divider(height: 1),
           Expanded(
             child: allIncome.when(
               loading: () => const Center(
@@ -115,12 +192,26 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     List<IncomeEntry> incomeEntries,
     List<ExpenseEntry> expenseEntries,
   ) {
-    final items = <_TransactionItem>[
+    var items = <_TransactionItem>[
       for (final entry in incomeEntries) _TransactionItem.income(entry),
       for (final entry in expenseEntries) _TransactionItem.expense(entry),
     ];
 
+    if (_searchQuery.isNotEmpty) {
+      items = items.where((item) {
+        final title = item.title.toLowerCase();
+        final amountStr = item.amount.toString();
+        final typeStr = item.isIncome ? 'income' : 'expense';
+        return title.contains(_searchQuery) ||
+            amountStr.contains(_searchQuery) ||
+            typeStr.contains(_searchQuery);
+      }).toList();
+    }
+
     if (items.isEmpty) {
+      if (_searchQuery.isNotEmpty) {
+        return _SearchEmptyState(query: _searchQuery);
+      }
       return const _EmptyState();
     }
 
@@ -905,6 +996,44 @@ class _TransactionRow extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _SearchEmptyState extends StatelessWidget {
+  const _SearchEmptyState({required this.query});
+  final String query;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.search_off_outlined,
+              size: 48, color: AppColors.textSecondary.withValues(alpha: 0.4)),
+          const SizedBox(height: 16),
+          Text(
+            'NO TRANSACTIONS MATCHING "$query".',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontFamily: 'IBMPlexMono',
+              fontSize: 12,
+              letterSpacing: 2,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Try searching with a different keyword or amount.',
+            style: TextStyle(
+              fontFamily: 'IBMPlexMono',
+              fontSize: 11,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
       ),
     );
   }
