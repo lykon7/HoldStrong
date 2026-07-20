@@ -15,9 +15,11 @@ import '../models/journal_entry.dart';
 import '../models/wishlist_item.dart';
 import '../models/liability_item.dart';
 import '../models/account_transfer.dart';
+import '../models/todo_item.dart';
+import '../models/workout_entry.dart';
 import 'backup_extensions.dart';
 
-const _kBackupVersion = 1;
+const _kBackupVersion = 2;
 
 class BackupResult {
   const BackupResult.success(this.file) : error = null;
@@ -61,6 +63,8 @@ class BackupService {
       final wishlist = await _isar.wishlistItems.where().findAll();
       final liabilities = await _isar.liabilityItems.where().findAll();
       final transfers = await _isar.accountTransfers.where().findAll();
+      final todos = await _isar.todoItems.where().findAll();
+      final workouts = await _isar.workoutEntrys.where().findAll();
 
       final payload = <String, dynamic>{
         'version': _kBackupVersion,
@@ -77,6 +81,8 @@ class BackupService {
         'wishlist': wishlist.map((e) => e.toBackupJson()).toList(),
         'liabilities': liabilities.map((e) => e.toBackupJson()).toList(),
         'accountTransfers': transfers.map((e) => e.toBackupJson()).toList(),
+        'todos': todos.map((e) => e.toBackupJson()).toList(),
+        'workouts': workouts.map((e) => e.toBackupJson()).toList(),
       };
 
       final jsonStr = const JsonEncoder.withIndent('  ').convert(payload);
@@ -118,6 +124,8 @@ class BackupService {
         'wishlist': 0,
         'liabilities': 0,
         'accountTransfers': 0,
+        'todos': 0,
+        'workouts': 0,
       };
 
       await _isar.writeTxn(() async {
@@ -273,6 +281,38 @@ class BackupService {
           if (existing == null) {
             await _isar.accountTransfers.put(accountTransferFromBackupJson(j));
             counts['accountTransfers'] = counts['accountTransfers']! + 1;
+          }
+        }
+
+        // Todos
+        final todoList = (json['todos'] as List<dynamic>? ?? [])
+            .cast<Map<String, dynamic>>();
+        for (final j in todoList) {
+          final title = j['title'] as String;
+          final createdAt = DateTime.parse(j['createdAt'] as String);
+          final existing = await _isar.todoItems
+              .filter()
+              .titleEqualTo(title)
+              .createdAtEqualTo(createdAt)
+              .findFirst();
+          if (existing == null) {
+            await _isar.todoItems.put(todoItemFromBackupJson(j));
+            counts['todos'] = counts['todos']! + 1;
+          }
+        }
+
+        // Workouts
+        final workoutList = (json['workouts'] as List<dynamic>? ?? [])
+            .cast<Map<String, dynamic>>();
+        for (final j in workoutList) {
+          final date = DateTime.parse(j['date'] as String);
+          final existing = await _isar.workoutEntrys
+              .filter()
+              .dateEqualTo(date)
+              .findFirst();
+          if (existing == null) {
+            await _isar.workoutEntrys.put(workoutEntryFromBackupJson(j));
+            counts['workouts'] = counts['workouts']! + 1;
           }
         }
       });

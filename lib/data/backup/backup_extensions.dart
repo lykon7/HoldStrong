@@ -9,6 +9,8 @@ import '../../data/models/journal_entry.dart';
 import '../../data/models/wishlist_item.dart';
 import '../../data/models/liability_item.dart';
 import '../../data/models/account_transfer.dart';
+import '../../data/models/todo_item.dart';
+import '../../data/models/workout_entry.dart';
 
 // ─── Goal ────────────────────────────────────────────────────────────────────
 
@@ -289,5 +291,41 @@ AccountTransfer accountTransferFromBackupJson(Map<String, dynamic> j) {
     ..amount = (j['amount'] as num).toDouble()
     ..note = j['note'] as String?
     ..transferAt = DateTime.parse(j['transferAt'] as String);
+}
+
+// ─── TodoItem ────────────────────────────────────────────────────────────────
+
+extension TodoItemBackup on TodoItem {
+  Map<String, dynamic> toBackupJson() => {
+        'title': title,
+        'isCompleted': isCompleted,
+        'deadline': deadline?.toIso8601String(),
+        'createdAt': createdAt.toIso8601String(),
+      };
+}
+
+TodoItem todoItemFromBackupJson(Map<String, dynamic> j) {
+  return TodoItem()
+    ..title = j['title'] as String
+    ..isCompleted = j['isCompleted'] as bool? ?? false
+    ..deadline = j['deadline'] != null
+        ? DateTime.parse(j['deadline'] as String)
+        : null
+    ..createdAt = DateTime.parse(j['createdAt'] as String);
+}
+
+// ─── WorkoutEntry ────────────────────────────────────────────────────────────
+
+extension WorkoutEntryBackup on WorkoutEntry {
+  Map<String, dynamic> toBackupJson() => {
+        'date': date.toIso8601String(),
+        'recordedAt': recordedAt.toIso8601String(),
+      };
+}
+
+WorkoutEntry workoutEntryFromBackupJson(Map<String, dynamic> j) {
+  return WorkoutEntry()
+    ..date = DateTime.parse(j['date'] as String)
+    ..recordedAt = DateTime.parse(j['recordedAt'] as String);
 }
 
