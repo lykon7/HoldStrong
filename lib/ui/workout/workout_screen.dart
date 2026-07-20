@@ -1,5 +1,8 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/theme.dart';
 import '../../domain/providers/workout_providers.dart';
 import '../../data/models/workout_entry.dart';
 import 'package:intl/intl.dart';
@@ -34,10 +37,62 @@ class WorkoutScreen extends ConsumerWidget {
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (err, _) => Text('Error loading calendar: $err'),
             ),
+            const SizedBox(height: 32),
+            const _WeightGraphSection(),
+            const SizedBox(height: 32),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _promptForWeight(BuildContext context, WidgetRef ref, DateTime date) async {
+    final ctrl = TextEditingController();
+    final weightStr = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.backgroundElevated,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(2),
+          side: const BorderSide(color: AppColors.cardBorder),
+        ),
+        title: const Text('LOG WEIGHT',
+            style: TextStyle(
+                fontFamily: 'Rajdhani',
+                fontWeight: FontWeight.w700,
+                fontSize: 18,
+                letterSpacing: 1,
+                color: AppColors.textPrimary)),
+        content: TextField(
+          controller: ctrl,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d.]'))],
+          style: const TextStyle(
+              fontFamily: 'IBMPlexMono',
+              fontSize: 14,
+              color: AppColors.textPrimary),
+          decoration: const InputDecoration(
+            hintText: 'Weight in kg...',
+            isDense: true,
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('CANCEL',
+                  style: TextStyle(color: AppColors.textSecondary))),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, ctrl.text),
+              child: const Text('SAVE',
+                  style: TextStyle(color: AppColors.accentGold))),
+        ],
+      ),
+    );
+    if (weightStr != null) {
+      final weight = double.tryParse(weightStr.trim());
+      ref.read(workoutControllerProvider.notifier).toggleWorkout(date, weight: weight);
+    }
   }
 
   Widget _buildStatsRow(WorkoutStats stats) {
@@ -155,7 +210,11 @@ class WorkoutScreen extends ConsumerWidget {
               onTap: isFuture
                   ? null
                   : () {
-                      ref.read(workoutControllerProvider.notifier).toggleWorkout(date);
+                      if (isWorkoutDay) {
+                        ref.read(workoutControllerProvider.notifier).toggleWorkout(date);
+                      } else {
+                        _promptForWeight(context, ref, date);
+                      }
                     },
               borderRadius: BorderRadius.circular(8),
               child: Container(
@@ -179,4 +238,177 @@ class WorkoutScreen extends ConsumerWidget {
       ],
     );
   }
+}
+
+class _WeightGraphSection extends ConsumerStatefulWidget {
+  const _WeightGraphSection();
+
+  @override
+  ConsumerState<_WeightGraphSection> createState() => _WeightGraphSectionState();
+}
+
+class _WeightGraphSectionState extends ConsumerState<_WeightGraphSection> {
+  int _months = 1;
+
+  @override
+  Widget build(BuildContext context) {
+    final history = ref.watch(weightHistoryProvider(_months));
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('BODY WEIGHT',
+                style: TextStyle(
+                    fontFamily: 'IBMPlexMono',
+                    fontSize: 10,
+                    letterSpacing: 2,
+                    color: AppColors.textSecondary)),
+            Wrap(
+              spacing: 8,
+              children: [1, 3, 6, 12].map((m) {
+                final isSel = _months == m;
+                return GestureDetector(
+                  onTap: () => setState(() => _months = m),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isSel ? AppColors.accentGold.withOpacity(0.2) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(2),
+                      border: Border.all(
+                          color: isSel ? AppColors.accentGold : AppColors.cardBorder),
+                    ),
+                    child: Text(m == 12 ? '1Y' : '${m}M',
+                        style: TextStyle(
+                            fontFamily: 'IBMPlexMono',
+                            fontSize: 10,
+                            color: isSel ? AppColors.accentGold : AppColors.textSecondary)),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          height: 160,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.backgroundElevated,
+            borderRadius: BorderRadius.circular(2),
+            border: Border.all(color: AppColors.cardBorder),
+          ),
+          child: history.isEmpty
+              ? const Center(
+                  child: Text('No weight data in this period.',
+                      style: TextStyle(
+                          fontFamily: 'IBMPlexMono',
+                          fontSize: 11,
+                          color: AppColors.textSecondary)))
+              : CustomPaint(
+                  painter: _WeightLinePainter(entries: history),
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+class _WeightLinePainter extends CustomPainter {
+  _WeightLinePainter({required this.entries});
+  final List<WorkoutEntry> entries;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (entries.isEmpty) return;
+
+    final maxW = entries.map((e) => e.weight!).reduce(math.max);
+    final minW = entries.map((e) => e.weight!).reduce(math.min);
+    
+    final range = maxW == minW ? 10.0 : maxW - minW;
+    final top = maxW + (range * 0.2);
+    final bottom = math.max(0.0, minW - (range * 0.2));
+    final yRange = top - bottom;
+
+    final tMin = entries.first.date.millisecondsSinceEpoch;
+    final tMax = entries.last.date.millisecondsSinceEpoch;
+    final tRange = tMax == tMin ? 1 : tMax - tMin;
+
+    final path = Path();
+    var first = true;
+    final points = <Offset>[];
+
+    var prevX = 0.0;
+    var prevY = 0.0;
+
+    for (final e in entries) {
+      final x = tRange == 0 
+          ? size.width / 2 
+          : ((e.date.millisecondsSinceEpoch - tMin) / tRange) * size.width;
+      final y = size.height - (((e.weight! - bottom) / yRange) * size.height);
+      points.add(Offset(x, y));
+      
+      if (first) {
+        path.moveTo(x, y);
+        prevX = x;
+        prevY = y;
+        first = false;
+      } else {
+        final controlX = (prevX + x) / 2;
+        path.cubicTo(controlX, prevY, controlX, y, x, y);
+        prevX = x;
+        prevY = y;
+      }
+    }
+
+    // Draw grid lines
+    final gridPaint = Paint()
+      ..color = AppColors.cardBorder
+      ..strokeWidth = 1;
+    canvas.drawLine(const Offset(0, 0), Offset(size.width, 0), gridPaint);
+    canvas.drawLine(Offset(0, size.height / 2), Offset(size.width, size.height / 2), gridPaint);
+    canvas.drawLine(Offset(0, size.height), Offset(size.width, size.height), gridPaint);
+
+    final fillRect = Rect.fromLTWH(0, 0, size.width, size.height);
+
+    final fillPath = Path.from(path)
+      ..lineTo(points.last.dx, size.height)
+      ..lineTo(points.first.dx, size.height)
+      ..close();
+
+    final fillPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          AppColors.accentGold.withOpacity(0.5),
+          AppColors.accentGold.withOpacity(0.0),
+        ],
+      ).createShader(fillRect);
+      
+    canvas.drawPath(fillPath, fillPaint);
+
+    final strokePaint = Paint()
+      ..color = AppColors.accentGold
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5;
+      
+    canvas.drawPath(path, strokePaint);
+
+    for (final p in points) {
+      final dotPaint = Paint()
+        ..color = AppColors.accentGold
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(p, 3.5, dotPaint);
+      
+      final innerDot = Paint()
+        ..color = AppColors.backgroundElevated
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(p, 1.5, innerDot);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _WeightLinePainter old) => true;
 }

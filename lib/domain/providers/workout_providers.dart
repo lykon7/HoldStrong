@@ -88,7 +88,7 @@ class WorkoutNotifier extends StateNotifier<AsyncValue<void>> {
 
   WorkoutNotifier(this._isar) : super(const AsyncData(null));
 
-  Future<void> toggleWorkout(DateTime date) async {
+  Future<void> toggleWorkout(DateTime date, {double? weight}) async {
     state = const AsyncLoading();
     try {
       final normalizedDate = DateTime(date.year, date.month, date.day);
@@ -100,7 +100,8 @@ class WorkoutNotifier extends StateNotifier<AsyncValue<void>> {
         } else {
           final entry = WorkoutEntry()
             ..date = normalizedDate
-            ..recordedAt = DateTime.now();
+            ..recordedAt = DateTime.now()
+            ..weight = weight;
           await _isar.workoutEntrys.put(entry);
         }
       });
@@ -115,4 +116,22 @@ class WorkoutNotifier extends StateNotifier<AsyncValue<void>> {
 final workoutControllerProvider = StateNotifierProvider<WorkoutNotifier, AsyncValue<void>>((ref) {
   final isar = ref.watch(isarProvider);
   return WorkoutNotifier(isar);
+});
+
+// Provides weight history sorted by date
+final weightHistoryProvider = Provider.family<List<WorkoutEntry>, int>((ref, months) {
+  final isar = ref.watch(isarProvider);
+  // Re-evaluate when entries change
+  ref.watch(workoutEntriesProvider);
+
+  final now = DateTime.now();
+  final startDate = DateTime(now.year, now.month - months, now.day);
+  
+  final entries = isar.workoutEntrys
+      .where()
+      .dateGreaterThan(startDate)
+      .sortByDate()
+      .findAllSync();
+
+  return entries.where((e) => e.weight != null).toList();
 });

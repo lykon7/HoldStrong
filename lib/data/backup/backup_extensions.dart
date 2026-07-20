@@ -320,12 +320,14 @@ extension WorkoutEntryBackup on WorkoutEntry {
   Map<String, dynamic> toBackupJson() => {
         'date': date.toIso8601String(),
         'recordedAt': recordedAt.toIso8601String(),
+        'weight': weight,
       };
 }
 
 WorkoutEntry workoutEntryFromBackupJson(Map<String, dynamic> j) {
   return WorkoutEntry()
     ..date = DateTime.parse(j['date'] as String)
-    ..recordedAt = DateTime.parse(j['recordedAt'] as String);
+    ..recordedAt = DateTime.parse(j['recordedAt'] as String)
+    ..weight = j['weight'] != null ? (j['weight'] as num).toDouble() : null;
 }
 

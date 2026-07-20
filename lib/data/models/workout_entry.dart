@@ -10,4 +10,6 @@ class WorkoutEntry {
   late DateTime date; // Stored at midnight to represent the day
 
   late DateTime recordedAt; // Optional, when it was toggled
+
+  double? weight; // Optional weight in kg
 }

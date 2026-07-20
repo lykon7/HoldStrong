@@ -26,6 +26,11 @@ const WorkoutEntrySchema = CollectionSchema(
       id: 1,
       name: r'recordedAt',
       type: IsarType.dateTime,
+    ),
+    r'weight': PropertySchema(
+      id: 2,
+      name: r'weight',
+      type: IsarType.double,
     )
   },
   estimateSize: _workoutEntryEstimateSize,
@@ -73,6 +78,7 @@ void _workoutEntrySerialize(
 ) {
   writer.writeDateTime(offsets[0], object.date);
   writer.writeDateTime(offsets[1], object.recordedAt);
+  writer.writeDouble(offsets[2], object.weight);
 }
 
 WorkoutEntry _workoutEntryDeserialize(
@@ -85,6 +91,7 @@ WorkoutEntry _workoutEntryDeserialize(
   object.date = reader.readDateTime(offsets[0]);
   object.id = id;
   object.recordedAt = reader.readDateTime(offsets[1]);
+  object.weight = reader.readDoubleOrNull(offsets[2]);
   return object;
 }
 
@@ -99,6 +106,8 @@ P _workoutEntryDeserializeProp<P>(
       return (reader.readDateTime(offset)) as P;
     case 1:
       return (reader.readDateTime(offset)) as P;
+    case 2:
+      return (reader.readDoubleOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -513,6 +522,88 @@ extension WorkoutEntryQueryFilter
       ));
     });
   }
+
+  QueryBuilder<WorkoutEntry, WorkoutEntry, QAfterFilterCondition>
+      weightIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'weight',
+      ));
+    });
+  }
+
+  QueryBuilder<WorkoutEntry, WorkoutEntry, QAfterFilterCondition>
+      weightIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'weight',
+      ));
+    });
+  }
+
+  QueryBuilder<WorkoutEntry, WorkoutEntry, QAfterFilterCondition> weightEqualTo(
+    double? value, {
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'weight',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<WorkoutEntry, WorkoutEntry, QAfterFilterCondition>
+      weightGreaterThan(
+    double? value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'weight',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<WorkoutEntry, WorkoutEntry, QAfterFilterCondition>
+      weightLessThan(
+    double? value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'weight',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<WorkoutEntry, WorkoutEntry, QAfterFilterCondition> weightBetween(
+    double? lower,
+    double? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'weight',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        epsilon: epsilon,
+      ));
+    });
+  }
 }
 
 extension WorkoutEntryQueryObject
@@ -545,6 +636,18 @@ extension WorkoutEntryQuerySortBy
       sortByRecordedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'recordedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<WorkoutEntry, WorkoutEntry, QAfterSortBy> sortByWeight() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'weight', Sort.asc);
+    });
+  }
+
+  QueryBuilder<WorkoutEntry, WorkoutEntry, QAfterSortBy> sortByWeightDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'weight', Sort.desc);
     });
   }
 }
@@ -587,6 +690,18 @@ extension WorkoutEntryQuerySortThenBy
       return query.addSortBy(r'recordedAt', Sort.desc);
     });
   }
+
+  QueryBuilder<WorkoutEntry, WorkoutEntry, QAfterSortBy> thenByWeight() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'weight', Sort.asc);
+    });
+  }
+
+  QueryBuilder<WorkoutEntry, WorkoutEntry, QAfterSortBy> thenByWeightDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'weight', Sort.desc);
+    });
+  }
 }
 
 extension WorkoutEntryQueryWhereDistinct
@@ -600,6 +715,12 @@ extension WorkoutEntryQueryWhereDistinct
   QueryBuilder<WorkoutEntry, WorkoutEntry, QDistinct> distinctByRecordedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'recordedAt');
+    });
+  }
+
+  QueryBuilder<WorkoutEntry, WorkoutEntry, QDistinct> distinctByWeight() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'weight');
     });
   }
 }
@@ -621,6 +742,12 @@ extension WorkoutEntryQueryProperty
   QueryBuilder<WorkoutEntry, DateTime, QQueryOperations> recordedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'recordedAt');
+    });
+  }
+
+  QueryBuilder<WorkoutEntry, double?, QQueryOperations> weightProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'weight');
     });
   }
 }
