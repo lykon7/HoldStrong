@@ -8,6 +8,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/theme.dart';
 import '../../domain/providers/backup_provider.dart';
 import '../../domain/providers/goal_providers.dart';
+import '../../domain/providers/income_providers.dart';
 import 'package:uuid/uuid.dart';
 import '../../data/models/fund_account.dart';
 
@@ -269,6 +270,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  // ─── Dialogs ───────────────────────────────────────────────────────────────
+
+  void _showIncomeSourcesDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (_) => ProviderScope(
+        parent: ProviderScope.containerOf(context),
+        child: const _IncomeSourcesDialog(),
+      ),
+    );
+  }
+
   // ─── Build ─────────────────────────────────────────────────────────────────
 
   @override
@@ -326,6 +339,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         color: AppColors.textPrimary)),
               ],
             ),
+          ),
+
+          const SizedBox(height: 32),
+
+          const SizedBox(height: 32),
+
+          // Preferences
+          _SectionHeader('PREFERENCES'),
+          const SizedBox(height: 8),
+
+          _ActionTile(
+            icon: Icons.category_outlined,
+            label: 'INCOME SOURCES',
+            sublabel: 'Configure default income source tags',
+            loading: false,
+            onTap: () => _showIncomeSourcesDialog(context, ref),
           ),
 
           const SizedBox(height: 32),
@@ -501,6 +530,108 @@ class _ActionTile extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _IncomeSourcesDialog extends ConsumerStatefulWidget {
+  const _IncomeSourcesDialog();
+  @override
+  ConsumerState<_IncomeSourcesDialog> createState() => _IncomeSourcesDialogState();
+}
+
+class _IncomeSourcesDialogState extends ConsumerState<_IncomeSourcesDialog> {
+  final _ctrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sources = ref.watch(incomeSourcesProvider);
+    return AlertDialog(
+      backgroundColor: AppColors.backgroundElevated,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(2)),
+        side: BorderSide(color: AppColors.cardBorder),
+      ),
+      title: const Text('INCOME SOURCES',
+          style: TextStyle(
+              fontFamily: 'Rajdhani',
+              fontWeight: FontWeight.w700,
+              fontSize: 18,
+              letterSpacing: 1,
+              color: AppColors.textPrimary)),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: sources.map((src) {
+                return Chip(
+                  label: Text(src,
+                      style: const TextStyle(
+                          fontFamily: 'IBMPlexMono',
+                          fontSize: 12,
+                          color: AppColors.textPrimary)),
+                  backgroundColor: AppColors.backgroundSurface,
+                  side: const BorderSide(color: AppColors.cardBorder),
+                  deleteIcon: const Icon(Icons.close, size: 14),
+                  deleteIconColor: AppColors.textSecondary,
+                  onDeleted: () {
+                    ref.read(incomeSourcesProvider.notifier).removeSource(src);
+                  },
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _ctrl,
+                    textCapitalization: TextCapitalization.characters,
+                    style: const TextStyle(
+                        fontFamily: 'IBMPlexMono',
+                        fontSize: 12,
+                        color: AppColors.textPrimary),
+                    decoration: const InputDecoration(
+                      hintText: 'New source (e.g. DA)',
+                      isDense: true,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.add, color: AppColors.accentGold),
+                  onPressed: () {
+                    final text = _ctrl.text.trim().toUpperCase();
+                    if (text.isNotEmpty) {
+                      ref.read(incomeSourcesProvider.notifier).addSource(text);
+                      _ctrl.clear();
+                    }
+                  },
+                )
+              ],
+            )
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('DONE',
+              style: TextStyle(
+                  fontFamily: 'IBMPlexMono', color: AppColors.accentGold)),
+        ),
+      ],
     );
   }
 }

@@ -1,7 +1,44 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/models/income_entry.dart';
 import '../../data/repositories/income_repository.dart';
 import 'goal_providers.dart';
+import 'recalibration_provider.dart';
+
+final incomeSourcesProvider =
+    StateNotifierProvider<IncomeSourcesNotifier, List<String>>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return IncomeSourcesNotifier(prefs);
+});
+
+class IncomeSourcesNotifier extends StateNotifier<List<String>> {
+  IncomeSourcesNotifier(this._prefs) : super(_load(_prefs));
+  final SharedPreferences _prefs;
+
+  static const _key = 'configured_income_sources';
+  static const _defaultSources = ['DA', 'PM', 'UB'];
+
+  static List<String> _load(SharedPreferences prefs) {
+    return prefs.getStringList(_key) ?? _defaultSources;
+  }
+
+  Future<void> updateSources(List<String> sources) async {
+    await _prefs.setStringList(_key, sources);
+    state = sources;
+  }
+
+  Future<void> addSource(String source) async {
+    if (!state.contains(source)) {
+      final newSources = [...state, source];
+      await updateSources(newSources);
+    }
+  }
+
+  Future<void> removeSource(String source) async {
+    final newSources = state.where((s) => s != source).toList();
+    await updateSources(newSources);
+  }
+}
 
 final incomeRepositoryProvider = Provider<IncomeRepository>((ref) {
   return IncomeRepository(ref.watch(isarProvider));

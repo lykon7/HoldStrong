@@ -7,8 +7,6 @@ import '../../core/theme.dart';
 import '../../data/models/income_entry.dart';
 import '../../domain/providers/income_providers.dart';
 import '../../domain/providers/fund_providers.dart';
-
-const _kDefaultSources = ['DA', 'PM', 'UB'];
 const _kGreen = Color(0xFF3DAA6E);
 
 class IncomeScreen extends ConsumerWidget {
@@ -569,6 +567,7 @@ class _AddIncomeSheetState extends ConsumerState<_AddIncomeSheet> {
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final dateFmt = DateFormat('dd MMM yyyy, HH:mm');
     final accounts = ref.watch(allFundAccountsProvider).value ?? [];
+    final sources = ref.watch(incomeSourcesProvider);
     final canSave = _amountCtrl.text.trim().isNotEmpty &&
         _sourceCtrl.text.trim().isNotEmpty &&
         _selectedFundUuid != null;
@@ -642,7 +641,7 @@ class _AddIncomeSheetState extends ConsumerState<_AddIncomeSheet> {
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: _kDefaultSources.map((src) {
+                  children: sources.map((src) {
                     final isSel = _sourceCtrl.text == src;
                     return GestureDetector(
                       onTap: () => setState(() => _sourceCtrl.text = src),
@@ -928,6 +927,7 @@ class _EditIncomeSheetState extends ConsumerState<_EditIncomeSheet> {
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final dateFmt = DateFormat('dd MMM yyyy, HH:mm');
     final accounts = ref.watch(allFundAccountsProvider).value ?? [];
+    final sources = ref.watch(incomeSourcesProvider);
     final canSave = _amountCtrl.text.trim().isNotEmpty &&
         _sourceCtrl.text.trim().isNotEmpty &&
         _selectedFundUuid != null;
@@ -997,7 +997,7 @@ class _EditIncomeSheetState extends ConsumerState<_EditIncomeSheet> {
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: _kDefaultSources.map((src) {
+                  children: sources.map((src) {
                     final isSel = _sourceCtrl.text == src;
                     return GestureDetector(
                       onTap: () => setState(() => _sourceCtrl.text = src),
