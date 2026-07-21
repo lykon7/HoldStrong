@@ -47,6 +47,12 @@ class HubScreen extends StatelessWidget {
               color: Color(0xFF7C83FD),
               onTap: () => context.push('/hub/liabilities'),
             ),
+            _HubCard(
+              title: 'Analysis',
+              icon: Icons.analytics_outlined,
+              color: Colors.pinkAccent,
+              onTap: () => context.push('/hub/analysis'),
+            ),
           ],
         ),
       ),

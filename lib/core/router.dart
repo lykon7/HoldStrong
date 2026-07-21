@@ -19,6 +19,7 @@ import '../ui/wishlist/wishlist_screen.dart';
 import '../ui/workout/workout_screen.dart';
 import '../ui/todo/todo_screen.dart';
 import '../ui/liabilities/liabilities_screen.dart';
+import '../ui/analysis/analysis_screen.dart';
 
 final goRouterProvider = Provider<GoRouter>((ref) {
   final activeGoalNotifier = ref.watch(activeGoalProvider);
@@ -101,6 +102,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/hub/liabilities',
         builder: (context, state) => const LiabilitiesScreen(),
+      ),
+      GoRoute(
+        path: '/hub/analysis',
+        builder: (context, state) => const AnalysisScreen(),
       ),
       GoRoute(
         path: '/log',
