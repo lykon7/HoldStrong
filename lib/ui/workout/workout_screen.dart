@@ -95,6 +95,44 @@ class WorkoutScreen extends ConsumerWidget {
     }
   }
 
+  Future<void> _promptForUntoggle(BuildContext context, WidgetRef ref, DateTime date) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.backgroundElevated,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(2),
+          side: const BorderSide(color: AppColors.cardBorder),
+        ),
+        title: const Text('REMOVE WORKOUT?',
+            style: TextStyle(
+                fontFamily: 'Rajdhani',
+                fontWeight: FontWeight.w700,
+                fontSize: 18,
+                letterSpacing: 1,
+                color: AppColors.textPrimary)),
+        content: const Text('This will remove the workout and weight data for this day. This cannot be undone.',
+            style: TextStyle(
+                fontFamily: 'IBMPlexMono',
+                fontSize: 12,
+                color: AppColors.textSecondary)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('CANCEL',
+                  style: TextStyle(color: AppColors.textSecondary))),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('REMOVE',
+                  style: TextStyle(color: AppColors.destructive))),
+        ],
+      ),
+    );
+    if (confirm == true) {
+      ref.read(workoutControllerProvider.notifier).toggleWorkout(date);
+    }
+  }
+
   Widget _buildStatsRow(WorkoutStats stats) {
     return Row(
       children: [
@@ -224,7 +262,7 @@ class WorkoutScreen extends ConsumerWidget {
                   ? null
                   : () {
                       if (isWorkoutDay) {
-                        ref.read(workoutControllerProvider.notifier).toggleWorkout(date);
+                        _promptForUntoggle(context, ref, date);
                       } else {
                         _promptForWeight(context, ref, date);
                       }
