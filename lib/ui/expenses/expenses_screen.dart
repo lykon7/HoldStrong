@@ -762,6 +762,36 @@ class _AddExpenseSheetState extends ConsumerState<_AddExpenseSheet> {
                 ),
                 const SizedBox(height: 20),
 
+                const _SheetLabel('CATEGORY'),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  value: _selectedCategory,
+                  decoration: const InputDecoration(
+                    hintText: 'Select category (optional)',
+                  ),
+                  icon: const Icon(Icons.expand_more),
+                  style: const TextStyle(
+                    fontFamily: 'IBMPlexMono',
+                    fontSize: 12,
+                    color: AppColors.textPrimary,
+                  ),
+                  dropdownColor: AppColors.backgroundElevated,
+                  items: [
+                    const DropdownMenuItem<String>(
+                      value: null,
+                      child: Text('None'),
+                    ),
+                    ...ref.watch(expenseCategoriesProvider).map((cat) {
+                      return DropdownMenuItem(
+                        value: cat,
+                        child: Text(cat),
+                      );
+                    }),
+                  ],
+                  onChanged: (value) => setState(() => _selectedCategory = value),
+                ),
+                const SizedBox(height: 20),
+
                 // Fund account picker
                 const _SheetLabel('PAY FROM FUND'),
                 const SizedBox(height: 10),
@@ -1096,6 +1126,38 @@ class _EditExpenseSheetState extends ConsumerState<_EditExpenseSheet> {
                   ),
                 ),
                 const SizedBox(height: 20),
+
+                const _SheetLabel('CATEGORY'),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  value: _selectedCategory,
+                  decoration: const InputDecoration(
+                    hintText: 'Select category (optional)',
+                  ),
+                  icon: const Icon(Icons.expand_more),
+                  style: const TextStyle(
+                    fontFamily: 'IBMPlexMono',
+                    fontSize: 12,
+                    color: AppColors.textPrimary,
+                  ),
+                  dropdownColor: AppColors.backgroundElevated,
+                  items: [
+                    const DropdownMenuItem<String>(
+                      value: null,
+                      child: Text('None'),
+                    ),
+                    ...ref.watch(expenseCategoriesProvider).map((cat) {
+                      return DropdownMenuItem(
+                        value: cat,
+                        child: Text(cat),
+                      );
+                    }),
+                  ],
+                  onChanged: (value) => setState(() => _selectedCategory = value),
+                ),
+                const SizedBox(height: 20),
+
+                // Fund account picker
                 const _SheetLabel('PAY FROM FUND'),
                 const SizedBox(height: 10),
                 if (accounts.isEmpty)
