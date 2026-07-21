@@ -5,37 +5,35 @@ import 'expense_providers.dart';
 import 'income_providers.dart';
 import 'package:flutter/material.dart';
 
-enum AnalysisDateRange { thisWeek, lastWeek, thisMonth, lastMonth, allTime, custom }
+enum AnalysisDateRange { thisWeek, lastWeek, thisMonth, lastMonth, last3Months, allTime, custom }
 
 class AnalysisFilterState {
   final AnalysisDateRange dateRangePreset;
   final DateTimeRange? customDateRange;
-  final String? expenseCategory;
-  final String? incomeCategory;
+  final Set<String> expenseCategories;
+  final Set<String> incomeCategories;
   final String searchQuery;
 
   AnalysisFilterState({
     this.dateRangePreset = AnalysisDateRange.thisMonth,
     this.customDateRange,
-    this.expenseCategory,
-    this.incomeCategory,
+    this.expenseCategories = const {},
+    this.incomeCategories = const {},
     this.searchQuery = '',
   });
 
   AnalysisFilterState copyWith({
     AnalysisDateRange? dateRangePreset,
     DateTimeRange? customDateRange,
-    String? expenseCategory,
-    bool clearExpenseCategory = false,
-    String? incomeCategory,
-    bool clearIncomeCategory = false,
+    Set<String>? expenseCategories,
+    Set<String>? incomeCategories,
     String? searchQuery,
   }) {
     return AnalysisFilterState(
       dateRangePreset: dateRangePreset ?? this.dateRangePreset,
       customDateRange: customDateRange ?? this.customDateRange,
-      expenseCategory: clearExpenseCategory ? null : (expenseCategory ?? this.expenseCategory),
-      incomeCategory: clearIncomeCategory ? null : (incomeCategory ?? this.incomeCategory),
+      expenseCategories: expenseCategories ?? this.expenseCategories,
+      incomeCategories: incomeCategories ?? this.incomeCategories,
       searchQuery: searchQuery ?? this.searchQuery,
     );
   }
@@ -55,18 +53,32 @@ class AnalysisFilterNotifier extends StateNotifier<AnalysisFilterState> {
     );
   }
 
-  void setExpenseCategory(String? category) {
-    state = state.copyWith(
-      expenseCategory: category,
-      clearExpenseCategory: category == null,
-    );
+  void toggleExpenseCategory(String category) {
+    final newSet = Set<String>.from(state.expenseCategories);
+    if (newSet.contains(category)) {
+      newSet.remove(category);
+    } else {
+      newSet.add(category);
+    }
+    state = state.copyWith(expenseCategories: newSet);
   }
 
-  void setIncomeCategory(String? category) {
-    state = state.copyWith(
-      incomeCategory: category,
-      clearIncomeCategory: category == null,
-    );
+  void clearExpenseCategories() {
+    state = state.copyWith(expenseCategories: const {});
+  }
+
+  void toggleIncomeCategory(String category) {
+    final newSet = Set<String>.from(state.incomeCategories);
+    if (newSet.contains(category)) {
+      newSet.remove(category);
+    } else {
+      newSet.add(category);
+    }
+    state = state.copyWith(incomeCategories: newSet);
+  }
+
+  void clearIncomeCategories() {
+    state = state.copyWith(incomeCategories: const {});
   }
 
   void setSearchQuery(String query) {
@@ -98,6 +110,11 @@ DateTimeRange? _getDateRange(AnalysisFilterState state) {
       final lastMonthStart = DateTime(now.year, now.month - 1, 1);
       final lastMonthEnd = DateTime(now.year, now.month, 1);
       return DateTimeRange(start: lastMonthStart, end: lastMonthEnd);
+    case AnalysisDateRange.last3Months:
+      final now = DateTime.now();
+      final currentMonthStart = DateTime(now.year, now.month, 1);
+      final threeMonthsAgo = DateTime(now.year, now.month - 3, 1);
+      return DateTimeRange(start: threeMonthsAgo, end: currentMonthStart);
     case AnalysisDateRange.custom:
       return state.customDateRange;
     case AnalysisDateRange.allTime:
@@ -118,9 +135,8 @@ final filteredExpensesProvider = Provider<List<ExpenseEntry>>((ref) {
         return false;
       }
     }
-    if (filterState.expenseCategory != null &&
-        filterState.expenseCategory != 'All' &&
-        entry.category != filterState.expenseCategory) {
+    if (filterState.expenseCategories.isNotEmpty &&
+        !filterState.expenseCategories.contains(entry.category)) {
       return false;
     }
     if (filterState.searchQuery.isNotEmpty) {
@@ -148,9 +164,8 @@ final filteredIncomeProvider = Provider<List<IncomeEntry>>((ref) {
         return false;
       }
     }
-    if (filterState.incomeCategory != null &&
-        filterState.incomeCategory != 'All' &&
-        entry.category != filterState.incomeCategory) {
+    if (filterState.incomeCategories.isNotEmpty &&
+        !filterState.incomeCategories.contains(entry.category)) {
       return false;
     }
     if (filterState.searchQuery.isNotEmpty) {

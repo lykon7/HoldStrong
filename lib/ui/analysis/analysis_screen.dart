@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme.dart';
 import '../../domain/providers/analysis_providers.dart';
@@ -101,24 +100,32 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen>
               children: [
                 Expanded(
                   flex: 3,
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<AnalysisDateRange>(
-                      value: filterState.dateRangePreset,
-                      dropdownColor: AppColors.backgroundElevated,
-                      isExpanded: true,
-                      style: const TextStyle(fontFamily: 'IBMPlexMono', fontSize: 12, color: AppColors.textPrimary),
-                      icon: const Icon(Icons.calendar_today, size: 16, color: AppColors.textSecondary),
-                      onChanged: (val) {
-                        if (val != null) _selectDateRange(context, val);
-                      },
-                      items: const [
-                        DropdownMenuItem(value: AnalysisDateRange.thisWeek, child: Text('This Week')),
-                        DropdownMenuItem(value: AnalysisDateRange.lastWeek, child: Text('Last Week')),
-                        DropdownMenuItem(value: AnalysisDateRange.thisMonth, child: Text('This Month')),
-                        DropdownMenuItem(value: AnalysisDateRange.lastMonth, child: Text('Last Month')),
-                        DropdownMenuItem(value: AnalysisDateRange.allTime, child: Text('All Time')),
-                        DropdownMenuItem(value: AnalysisDateRange.custom, child: Text('Custom Range...')),
-                      ],
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: AppColors.backgroundElevated,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<AnalysisDateRange>(
+                        value: filterState.dateRangePreset,
+                        dropdownColor: AppColors.backgroundElevated,
+                        isExpanded: true,
+                        style: const TextStyle(fontFamily: 'IBMPlexMono', fontSize: 12, color: AppColors.textPrimary),
+                        icon: const Icon(Icons.keyboard_arrow_down, size: 16, color: AppColors.textSecondary),
+                        onChanged: (val) {
+                          if (val != null) _selectDateRange(context, val);
+                        },
+                        items: const [
+                          DropdownMenuItem(value: AnalysisDateRange.thisWeek, child: Text('This Week')),
+                          DropdownMenuItem(value: AnalysisDateRange.lastWeek, child: Text('Last Week')),
+                          DropdownMenuItem(value: AnalysisDateRange.thisMonth, child: Text('This Month')),
+                          DropdownMenuItem(value: AnalysisDateRange.lastMonth, child: Text('Last Month')),
+                          DropdownMenuItem(value: AnalysisDateRange.last3Months, child: Text('Last 3 Months')),
+                          DropdownMenuItem(value: AnalysisDateRange.allTime, child: Text('All Time')),
+                          DropdownMenuItem(value: AnalysisDateRange.custom, child: Text('Custom Range...')),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -135,27 +142,86 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen>
                           final incomeCategories = ref.watch(incomeCategoriesProvider);
                           
                           final categories = isExpense ? expenseCategories : incomeCategories;
-                          final currentValue = isExpense ? filterState.expenseCategory : filterState.incomeCategory;
+                          final selectedSet = isExpense ? filterState.expenseCategories : filterState.incomeCategories;
+                          final label = selectedSet.isEmpty ? 'All' : '${selectedSet.length} selected';
 
-                          return DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: currentValue,
-                              hint: const Text('Category', style: TextStyle(fontFamily: 'IBMPlexMono', fontSize: 12, color: AppColors.textSecondary)),
-                              dropdownColor: AppColors.backgroundElevated,
-                              isExpanded: true,
-                              style: const TextStyle(fontFamily: 'IBMPlexMono', fontSize: 12, color: AppColors.textPrimary),
-                              icon: const Icon(Icons.filter_list, size: 16, color: AppColors.textSecondary),
-                              onChanged: (val) {
-                                if (isExpense) {
-                                  notifier.setExpenseCategory(val == 'All' ? null : val);
-                                } else {
-                                  notifier.setIncomeCategory(val == 'All' ? null : val);
-                                }
-                              },
-                              items: [
-                                const DropdownMenuItem(value: 'All', child: Text('All')),
-                                ...categories.map((c) => DropdownMenuItem(value: c, child: Text(c))),
-                              ],
+                          return InkWell(
+                            onTap: () {
+                              showModalBottomSheet(
+                                context: context,
+                                backgroundColor: AppColors.backgroundSurface,
+                                builder: (ctx) {
+                                  return Consumer(
+                                    builder: (context, ref, _) {
+                                      final currentState = ref.watch(analysisFilterProvider);
+                                      final currentSet = isExpense ? currentState.expenseCategories : currentState.incomeCategories;
+                                      return Column(
+                                        children: [
+                                          Padding(
+                                            padding: const EdgeInsets.all(16.0),
+                                            child: Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                const Text('Select Categories', style: TextStyle(fontFamily: 'Rajdhani', fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                                                TextButton(
+                                                  onPressed: () {
+                                                    if (isExpense) {
+                                                      notifier.clearExpenseCategories();
+                                                    } else {
+                                                      notifier.clearIncomeCategories();
+                                                    }
+                                                  },
+                                                  child: const Text('Clear All', style: TextStyle(color: AppColors.accentGold)),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          const Divider(height: 1),
+                                          Expanded(
+                                            child: ListView(
+                                              children: categories.map((c) {
+                                                return CheckboxListTile(
+                                                  title: Text(c, style: const TextStyle(fontFamily: 'IBMPlexMono', fontSize: 13, color: AppColors.textPrimary)),
+                                                  value: currentSet.contains(c),
+                                                  activeColor: AppColors.accentGold,
+                                                  checkColor: Colors.black,
+                                                  onChanged: (val) {
+                                                    if (isExpense) {
+                                                      notifier.toggleExpenseCategory(c);
+                                                    } else {
+                                                      notifier.toggleIncomeCategory(c);
+                                                    }
+                                                  },
+                                                );
+                                              }).toList(),
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    }
+                                  );
+                                },
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: AppColors.backgroundElevated,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      label,
+                                      style: const TextStyle(fontFamily: 'IBMPlexMono', fontSize: 12, color: AppColors.textPrimary),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const Icon(Icons.keyboard_arrow_down, size: 16, color: AppColors.textSecondary),
+                                ],
+                              ),
                             ),
                           );
                         },
@@ -286,55 +352,57 @@ class _AnalysisContentView extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         
-        // Bar Chart
+        // Horizontal Bar Chart
         if (categoryTotals.isNotEmpty)
-          SizedBox(
-            height: 250,
-            child: BarChart(
-              BarChartData(
-                alignment: BarChartAlignment.spaceAround,
-                maxY: categoryTotals.values.isEmpty ? 100 : categoryTotals.values.reduce((a, b) => a > b ? a : b) * 1.2,
-                barTouchData: BarTouchData(enabled: true),
-                titlesData: FlTitlesData(
-                  show: true,
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (value, meta) {
-                        final keys = categoryTotals.keys.toList();
-                        if (value.toInt() < 0 || value.toInt() >= keys.length) return const SizedBox.shrink();
-                        final title = keys[value.toInt()];
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Text(
-                            title.length > 5 ? title.substring(0, 5) : title,
-                            style: const TextStyle(color: AppColors.textSecondary, fontSize: 10, fontFamily: 'IBMPlexMono'),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: (() {
+              final entries = categoryTotals.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+              final maxVal = entries.isEmpty ? 1.0 : entries.first.value;
+              return entries.map((entry) {
+                final widthFactor = maxVal == 0 ? 0.0 : entry.value / maxVal;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        entry.key,
+                        style: const TextStyle(fontFamily: 'IBMPlexMono', fontSize: 12, color: AppColors.textSecondary),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                return Row(
+                                  children: [
+                                    Container(
+                                      height: 12,
+                                      width: constraints.maxWidth * widthFactor,
+                                      decoration: BoxDecoration(
+                                        color: color,
+                                        borderRadius: BorderRadius.circular(2),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
                           ),
-                        );
-                      },
-                    ),
-                  ),
-                  leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                ),
-                borderData: FlBorderData(show: false),
-                gridData: const FlGridData(show: false),
-                barGroups: categoryTotals.entries.toList().asMap().entries.map((entry) {
-                  return BarChartGroupData(
-                    x: entry.key,
-                    barRods: [
-                      BarChartRodData(
-                        toY: entry.value.value,
-                        color: color,
-                        width: 16,
-                        borderRadius: BorderRadius.circular(2),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Rs ${fmt.format(entry.value)}',
+                            style: const TextStyle(fontFamily: 'IBMPlexMono', fontSize: 11, color: AppColors.textPrimary),
+                          ),
+                        ],
                       ),
                     ],
-                  );
-                }).toList(),
-              ),
-            ),
+                  ),
+                );
+              }).toList();
+            })(),
           ),
         const SizedBox(height: 24),
 
