@@ -7,12 +7,15 @@ import 'package:flutter/material.dart';
 
 enum AnalysisDateRange { thisWeek, lastWeek, thisMonth, lastMonth, last3Months, allTime, custom }
 
+enum AnalysisSortOption { dateNewToOld, dateOldToNew, valueHighToLow, valueLowToHigh }
+
 class AnalysisFilterState {
   final AnalysisDateRange dateRangePreset;
   final DateTimeRange? customDateRange;
   final Set<String> expenseCategories;
   final Set<String> incomeCategories;
   final String searchQuery;
+  final AnalysisSortOption sortOption;
 
   AnalysisFilterState({
     this.dateRangePreset = AnalysisDateRange.thisMonth,
@@ -20,6 +23,7 @@ class AnalysisFilterState {
     this.expenseCategories = const {},
     this.incomeCategories = const {},
     this.searchQuery = '',
+    this.sortOption = AnalysisSortOption.dateNewToOld,
   });
 
   AnalysisFilterState copyWith({
@@ -28,6 +32,7 @@ class AnalysisFilterState {
     Set<String>? expenseCategories,
     Set<String>? incomeCategories,
     String? searchQuery,
+    AnalysisSortOption? sortOption,
   }) {
     return AnalysisFilterState(
       dateRangePreset: dateRangePreset ?? this.dateRangePreset,
@@ -35,6 +40,7 @@ class AnalysisFilterState {
       expenseCategories: expenseCategories ?? this.expenseCategories,
       incomeCategories: incomeCategories ?? this.incomeCategories,
       searchQuery: searchQuery ?? this.searchQuery,
+      sortOption: sortOption ?? this.sortOption,
     );
   }
 }
@@ -83,6 +89,10 @@ class AnalysisFilterNotifier extends StateNotifier<AnalysisFilterState> {
 
   void setSearchQuery(String query) {
     state = state.copyWith(searchQuery: query);
+  }
+
+  void setSortOption(AnalysisSortOption option) {
+    state = state.copyWith(sortOption: option);
   }
 }
 
@@ -149,7 +159,18 @@ final filteredExpensesProvider = Provider<List<ExpenseEntry>>((ref) {
     }
     return true;
   }).toList()
-    ..sort((a, b) => b.loggedAt.compareTo(a.loggedAt));
+    ..sort((a, b) {
+      switch (filterState.sortOption) {
+        case AnalysisSortOption.dateNewToOld:
+          return b.loggedAt.compareTo(a.loggedAt);
+        case AnalysisSortOption.dateOldToNew:
+          return a.loggedAt.compareTo(b.loggedAt);
+        case AnalysisSortOption.valueHighToLow:
+          return b.amount.compareTo(a.amount);
+        case AnalysisSortOption.valueLowToHigh:
+          return a.amount.compareTo(b.amount);
+      }
+    });
 });
 
 final filteredIncomeProvider = Provider<List<IncomeEntry>>((ref) {
@@ -179,7 +200,18 @@ final filteredIncomeProvider = Provider<List<IncomeEntry>>((ref) {
     }
     return true;
   }).toList()
-    ..sort((a, b) => b.loggedAt.compareTo(a.loggedAt));
+    ..sort((a, b) {
+      switch (filterState.sortOption) {
+        case AnalysisSortOption.dateNewToOld:
+          return b.loggedAt.compareTo(a.loggedAt);
+        case AnalysisSortOption.dateOldToNew:
+          return a.loggedAt.compareTo(b.loggedAt);
+        case AnalysisSortOption.valueHighToLow:
+          return b.amount.compareTo(a.amount);
+        case AnalysisSortOption.valueLowToHigh:
+          return a.amount.compareTo(b.amount);
+      }
+    });
 });
 
 final expenseCategoryTotalsProvider = Provider<Map<String, double>>((ref) {

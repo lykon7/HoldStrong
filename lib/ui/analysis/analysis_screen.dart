@@ -232,6 +232,31 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen>
                     },
                   ),
                 ),
+                const SizedBox(width: 8),
+                PopupMenuButton<AnalysisSortOption>(
+                  icon: const Icon(Icons.sort, color: AppColors.textSecondary, size: 20),
+                  color: AppColors.backgroundElevated,
+                  initialValue: filterState.sortOption,
+                  onSelected: (val) => notifier.setSortOption(val),
+                  itemBuilder: (context) => const [
+                    PopupMenuItem(
+                      value: AnalysisSortOption.dateNewToOld,
+                      child: Text('Date: Newest First', style: TextStyle(fontFamily: 'IBMPlexMono', fontSize: 12, color: AppColors.textPrimary)),
+                    ),
+                    PopupMenuItem(
+                      value: AnalysisSortOption.dateOldToNew,
+                      child: Text('Date: Oldest First', style: TextStyle(fontFamily: 'IBMPlexMono', fontSize: 12, color: AppColors.textPrimary)),
+                    ),
+                    PopupMenuItem(
+                      value: AnalysisSortOption.valueHighToLow,
+                      child: Text('Value: High to Low', style: TextStyle(fontFamily: 'IBMPlexMono', fontSize: 12, color: AppColors.textPrimary)),
+                    ),
+                    PopupMenuItem(
+                      value: AnalysisSortOption.valueLowToHigh,
+                      child: Text('Value: Low to High', style: TextStyle(fontFamily: 'IBMPlexMono', fontSize: 12, color: AppColors.textPrimary)),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
