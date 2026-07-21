@@ -18,17 +18,6 @@ class _RecalibrationTimerCardState
     extends ConsumerState<RecalibrationTimerCard> {
   Timer? _timer;
 
-  static const _messages = [
-    "Your dopamine threshold is shifting down. Every second counted is neural rewiring.",
-    "Pixels are cheap stimulation. Your real life is not. You just reclaimed another moment.",
-    "The sensation is dopamine seeking an old path. The path is closing. Hold strong.",
-    "You are not broken. You are recalibrating. Discipline over artificial novelty.",
-    "Every urge defeated strengthens your prefrontal cortex. Keep holding.",
-    "Real connection requires a real baseline. You are building it right now.",
-    "The urge lasts a few minutes. Your recovery lasts forever.",
-    "Discipline is not a feeling. It is a decision you keep making every second.",
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -251,9 +240,6 @@ class _RecalibrationTimerCardState
     final minutes = elapsed.inMinutes % 60;
     final seconds = elapsed.inSeconds % 60;
 
-    final msgIndex = (elapsed.inSeconds ~/ 15) % _messages.length;
-    final motivationMsg = _messages[msgIndex];
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -261,7 +247,7 @@ class _RecalibrationTimerCardState
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text(
-              'CLEAN TIME RECLAIMED',
+              'TIME SINCE',
               style: TextStyle(
                 fontFamily: 'IBMPlexMono',
                 fontSize: 10,
@@ -309,37 +295,6 @@ class _RecalibrationTimerCardState
             Expanded(child: _buildTimeSegment(minutes.toString().padLeft(2, '0'), 'MIN')),
             _buildColon(),
             Expanded(child: _buildTimeSegment(seconds.toString().padLeft(2, '0'), 'SEC')),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Divider(color: AppColors.cardBorder.withValues(alpha: 0.5), height: 1),
-        const SizedBox(height: 12),
-        // Rotating motivation message
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Icon(
-              Icons.bolt_outlined,
-              size: 14,
-              color: AppColors.accentGold,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                child: Text(
-                  motivationMsg,
-                  key: ValueKey(msgIndex),
-                  style: const TextStyle(
-                    fontFamily: 'IBMPlexMono',
-                    fontSize: 11,
-                    fontStyle: FontStyle.italic,
-                    color: AppColors.textPrimary,
-                    height: 1.4,
-                  ),
-                ),
-              ),
-            ),
           ],
         ),
       ],
