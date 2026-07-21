@@ -430,6 +430,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             onTap: () => _showExpenseCategoriesDialog(context, ref),
           ),
 
+          const SizedBox(height: 8),
+
           _ActionTile(
             icon: Icons.timer_outlined,
             label: 'CUSTOM TIMERS',
