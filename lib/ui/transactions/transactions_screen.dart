@@ -322,8 +322,8 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   }
 
   void _showCategoryFilterDialog(BuildContext context, WidgetRef ref) {
-    final incomeCats = ref.read(incomeCategoriesProvider).valueOrNull ?? [];
-    final expenseCats = ref.read(expenseCategoriesProvider).valueOrNull ?? [];
+    final incomeCats = ref.read(incomeCategoriesProvider);
+    final expenseCats = ref.read(expenseCategoriesProvider);
     final allCats = <String>{...incomeCats, ...expenseCats, 'Uncategorized'}.toList()..sort();
 
     showDialog(
