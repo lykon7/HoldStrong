@@ -135,9 +135,10 @@ final filteredExpensesProvider = Provider<List<ExpenseEntry>>((ref) {
         return false;
       }
     }
-    if (filterState.expenseCategories.isNotEmpty &&
-        !filterState.expenseCategories.contains(entry.category)) {
-      return false;
+    if (filterState.expenseCategories.isNotEmpty) {
+      final matches = filterState.expenseCategories.contains(entry.category) ||
+          (entry.category == null && filterState.expenseCategories.contains('Uncategorized'));
+      if (!matches) return false;
     }
     if (filterState.searchQuery.isNotEmpty) {
       if (!entry.purpose
@@ -164,9 +165,10 @@ final filteredIncomeProvider = Provider<List<IncomeEntry>>((ref) {
         return false;
       }
     }
-    if (filterState.incomeCategories.isNotEmpty &&
-        !filterState.incomeCategories.contains(entry.category)) {
-      return false;
+    if (filterState.incomeCategories.isNotEmpty) {
+      final matches = filterState.incomeCategories.contains(entry.category) ||
+          (entry.category == null && filterState.incomeCategories.contains('Uncategorized'));
+      if (!matches) return false;
     }
     if (filterState.searchQuery.isNotEmpty) {
       if (!entry.source

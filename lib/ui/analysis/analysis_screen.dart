@@ -101,6 +101,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen>
                 Expanded(
                   flex: 3,
                   child: Container(
+                    height: 40,
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
                       color: AppColors.backgroundElevated,
@@ -111,6 +112,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen>
                         value: filterState.dateRangePreset,
                         dropdownColor: AppColors.backgroundElevated,
                         isExpanded: true,
+                        isDense: true,
                         style: const TextStyle(fontFamily: 'IBMPlexMono', fontSize: 12, color: AppColors.textPrimary),
                         icon: const Icon(Icons.keyboard_arrow_down, size: 16, color: AppColors.textSecondary),
                         onChanged: (val) {
@@ -179,7 +181,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen>
                                           const Divider(height: 1),
                                           Expanded(
                                             child: ListView(
-                                              children: categories.map((c) {
+                                              children: ['Uncategorized', ...categories].map((c) {
                                                 return CheckboxListTile(
                                                   title: Text(c, style: const TextStyle(fontFamily: 'IBMPlexMono', fontSize: 13, color: AppColors.textPrimary)),
                                                   value: currentSet.contains(c),
@@ -204,7 +206,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen>
                               );
                             },
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              height: 40,
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
                               decoration: BoxDecoration(
                                 color: AppColors.backgroundElevated,
                                 borderRadius: BorderRadius.circular(4),
