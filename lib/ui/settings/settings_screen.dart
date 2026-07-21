@@ -13,6 +13,7 @@ import 'package:uuid/uuid.dart';
 import '../../data/models/fund_account.dart';
 import '../../domain/providers/expense_providers.dart';
 import '../../domain/providers/fund_providers.dart';
+import 'widgets/custom_timers_config.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -314,6 +315,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  void _showCustomTimersDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (_) => ProviderScope(
+        parent: ProviderScope.containerOf(context),
+        child: const CustomTimersConfigDialog(),
+      ),
+    );
+  }
+
   // ─── Build ─────────────────────────────────────────────────────────────────
 
   @override
@@ -417,6 +428,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             sublabel: 'Configure categories for expenses',
             loading: false,
             onTap: () => _showExpenseCategoriesDialog(context, ref),
+          ),
+
+          _ActionTile(
+            icon: Icons.timer_outlined,
+            label: 'CUSTOM TIMERS',
+            sublabel: 'Configure countup and countdown timers for the home page',
+            loading: false,
+            onTap: () => _showCustomTimersDialog(context, ref),
           ),
 
           const SizedBox(height: 32),

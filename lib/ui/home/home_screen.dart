@@ -9,7 +9,8 @@ import 'widgets/goal_progress_card.dart';
 import 'widgets/net_week_graph.dart';
 import 'widgets/hub_shortcuts.dart';
 import 'widgets/total_cash_card.dart';
-import 'widgets/recalibration_timer_card.dart';
+import 'widgets/custom_timer_card.dart';
+import '../../domain/providers/custom_timer_providers.dart';
 import '../../core/theme.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -50,8 +51,7 @@ class HomeScreen extends ConsumerWidget {
                 const SizedBox(height: 16),
                 const TotalCashCard(),
                 const SizedBox(height: 16),
-                const RecalibrationTimerCard(),
-                const SizedBox(height: 16),
+                ...ref.watch(customTimersProvider).map((t) => CustomTimerCard(timer: t)),
                 goal == null
                     ? Container(
                         padding: const EdgeInsets.all(20),
