@@ -14,10 +14,17 @@ class HubShortcuts extends StatelessWidget {
         children: [
             _buildShortcut(
               context,
-              title: 'Journal',
-              icon: Icons.book_outlined,
+              title: 'Analysis',
+              icon: Icons.analytics_outlined,
               color: AppColors.accentGold,
-              route: '/hub/journal',
+              route: '/hub/analysis',
+            ),
+            _buildShortcut(
+              context,
+              title: 'To-Do',
+              icon: Icons.checklist,
+              color: AppColors.accentGold,
+              route: '/hub/todo',
             ),
             _buildShortcut(
               context,
@@ -28,17 +35,10 @@ class HubShortcuts extends StatelessWidget {
             ),
             _buildShortcut(
               context,
-              title: 'Resists',
-              icon: Icons.shield_outlined,
+              title: 'Journal',
+              icon: Icons.book_outlined,
               color: AppColors.accentGold,
-              route: '/hub/resists',
-            ),
-            _buildShortcut(
-              context,
-              title: 'To-Do',
-              icon: Icons.checklist,
-              color: AppColors.accentGold,
-              route: '/hub/todo',
+              route: '/hub/journal',
             ),
             _buildShortcut(
               context,
