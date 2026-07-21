@@ -11,6 +11,8 @@ import '../../domain/providers/goal_providers.dart';
 import '../../domain/providers/income_providers.dart';
 import 'package:uuid/uuid.dart';
 import '../../data/models/fund_account.dart';
+import '../../domain/providers/expense_providers.dart';
+import '../../domain/providers/fund_providers.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -282,6 +284,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  void _showExpenseAccountsDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (_) => ProviderScope(
+        parent: ProviderScope.containerOf(context),
+        child: const _ExpenseAccountsConfig(),
+      ),
+    );
+  }
+
   // ─── Build ─────────────────────────────────────────────────────────────────
 
   @override
@@ -355,6 +367,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             sublabel: 'Configure default income source tags',
             loading: false,
             onTap: () => _showIncomeSourcesDialog(context, ref),
+          ),
+
+          const SizedBox(height: 8),
+
+          _ActionTile(
+            icon: Icons.account_balance_wallet_outlined,
+            label: 'EXPENSE ACCOUNTS',
+            sublabel: 'Configure which fund accounts are available for expenses',
+            loading: false,
+            onTap: () => _showExpenseAccountsDialog(context, ref),
           ),
 
           const SizedBox(height: 32),
@@ -621,6 +643,78 @@ class _IncomeSourcesDialogState extends ConsumerState<_IncomeSourcesDialog> {
                 )
               ],
             )
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('DONE',
+              style: TextStyle(
+                  fontFamily: 'IBMPlexMono', color: AppColors.accentGold)),
+        ),
+      ],
+    );
+  }
+}
+
+class _ExpenseAccountsConfig extends ConsumerWidget {
+  const _ExpenseAccountsConfig();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final allAccounts = ref.watch(allFundAccountsProvider).value ?? [];
+    final selectedAccounts = ref.watch(deductibleFundAccountsProvider);
+
+    return AlertDialog(
+      backgroundColor: AppColors.backgroundElevated,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(2)),
+        side: BorderSide(color: AppColors.cardBorder),
+      ),
+      title: const Text('EXPENSE ACCOUNTS',
+          style: TextStyle(
+              fontFamily: 'Rajdhani',
+              fontWeight: FontWeight.w700,
+              fontSize: 18,
+              letterSpacing: 1,
+              color: AppColors.textPrimary)),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Select which fund accounts are available to deduct from when logging an expense. If none are selected, all accounts will be shown by default.',
+              style: TextStyle(
+                fontFamily: 'IBMPlexMono',
+                fontSize: 11,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (allAccounts.isEmpty)
+              const Text('No fund accounts exist.', style: TextStyle(color: AppColors.textSecondary, fontFamily: 'IBMPlexMono', fontSize: 12))
+            else
+              ListView.builder(
+                shrinkWrap: true,
+                itemCount: allAccounts.length,
+                itemBuilder: (ctx, i) {
+                  final acc = allAccounts[i];
+                  final isSelected = selectedAccounts.contains(acc.uuid);
+                  return CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    activeColor: AppColors.accentGold,
+                    checkColor: AppColors.backgroundPrimary,
+                    title: Text(acc.name, style: const TextStyle(fontFamily: 'IBMPlexMono', fontSize: 14, color: AppColors.textPrimary)),
+                    value: isSelected,
+                    onChanged: (val) {
+                      ref.read(deductibleFundAccountsProvider.notifier).toggleAccount(acc.uuid);
+                    },
+                  );
+                },
+              ),
           ],
         ),
       ),

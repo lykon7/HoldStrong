@@ -1972,7 +1972,11 @@ class _AddExpenseSheetState extends ConsumerState<_AddExpenseSheet> {
   Widget build(BuildContext context) {
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final dateFmt = DateFormat('dd MMM yyyy, HH:mm');
-    final accounts = ref.watch(allFundAccountsProvider).value ?? [];
+    final allAccounts = ref.watch(allFundAccountsProvider).value ?? [];
+    final deductibleAccounts = ref.watch(deductibleFundAccountsProvider);
+    final accounts = deductibleAccounts.isEmpty
+        ? allAccounts
+        : allAccounts.where((a) => deductibleAccounts.contains(a.uuid)).toList();
     final canSave = _amountCtrl.text.trim().isNotEmpty &&
         _purposeCtrl.text.trim().isNotEmpty &&
         _selectedFundUuid != null;
@@ -2346,7 +2350,11 @@ class _EditExpenseSheetState extends ConsumerState<_EditExpenseSheet> {
   Widget build(BuildContext context) {
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final dateFmt = DateFormat('dd MMM yyyy, HH:mm');
-    final accounts = ref.watch(allFundAccountsProvider).value ?? [];
+    final allAccounts = ref.watch(allFundAccountsProvider).value ?? [];
+    final deductibleAccounts = ref.watch(deductibleFundAccountsProvider);
+    final accounts = deductibleAccounts.isEmpty
+        ? allAccounts
+        : allAccounts.where((a) => deductibleAccounts.contains(a.uuid)).toList();
     final canSave = _amountCtrl.text.trim().isNotEmpty &&
         _purposeCtrl.text.trim().isNotEmpty &&
         _selectedFundUuid != null;

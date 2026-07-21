@@ -1,7 +1,41 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/models/expense_entry.dart';
 import '../../data/repositories/expense_repository.dart';
 import 'goal_providers.dart';
+import 'recalibration_provider.dart';
+
+final deductibleFundAccountsProvider =
+    StateNotifierProvider<DeductibleFundAccountsNotifier, List<String>>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return DeductibleFundAccountsNotifier(prefs);
+});
+
+class DeductibleFundAccountsNotifier extends StateNotifier<List<String>> {
+  DeductibleFundAccountsNotifier(this._prefs) : super(_load(_prefs));
+  final SharedPreferences _prefs;
+
+  static const _key = 'configured_expense_accounts';
+
+  static List<String> _load(SharedPreferences prefs) {
+    return prefs.getStringList(_key) ?? [];
+  }
+
+  Future<void> updateAccounts(List<String> accounts) async {
+    await _prefs.setStringList(_key, accounts);
+    state = accounts;
+  }
+
+  Future<void> toggleAccount(String uuid) async {
+    if (state.contains(uuid)) {
+      final newAccounts = state.where((id) => id != uuid).toList();
+      await updateAccounts(newAccounts);
+    } else {
+      final newAccounts = [...state, uuid];
+      await updateAccounts(newAccounts);
+    }
+  }
+}
 
 final expenseRepositoryProvider = Provider<ExpenseRepository>((ref) {
   return ExpenseRepository(ref.watch(isarProvider));
