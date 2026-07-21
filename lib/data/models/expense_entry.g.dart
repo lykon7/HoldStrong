@@ -22,23 +22,28 @@ const ExpenseEntrySchema = CollectionSchema(
       name: r'amount',
       type: IsarType.double,
     ),
-    r'fundUuid': PropertySchema(
+    r'category': PropertySchema(
       id: 1,
+      name: r'category',
+      type: IsarType.string,
+    ),
+    r'fundUuid': PropertySchema(
+      id: 2,
       name: r'fundUuid',
       type: IsarType.string,
     ),
     r'loggedAt': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'loggedAt',
       type: IsarType.dateTime,
     ),
     r'purpose': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'purpose',
       type: IsarType.string,
     ),
     r'uuid': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'uuid',
       type: IsarType.string,
     )
@@ -104,6 +109,12 @@ int _expenseEntryEstimateSize(
 ) {
   var bytesCount = offsets.last;
   {
+    final value = object.category;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.fundUuid;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -121,10 +132,11 @@ void _expenseEntrySerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeDouble(offsets[0], object.amount);
-  writer.writeString(offsets[1], object.fundUuid);
-  writer.writeDateTime(offsets[2], object.loggedAt);
-  writer.writeString(offsets[3], object.purpose);
-  writer.writeString(offsets[4], object.uuid);
+  writer.writeString(offsets[1], object.category);
+  writer.writeString(offsets[2], object.fundUuid);
+  writer.writeDateTime(offsets[3], object.loggedAt);
+  writer.writeString(offsets[4], object.purpose);
+  writer.writeString(offsets[5], object.uuid);
 }
 
 ExpenseEntry _expenseEntryDeserialize(
@@ -135,11 +147,12 @@ ExpenseEntry _expenseEntryDeserialize(
 ) {
   final object = ExpenseEntry();
   object.amount = reader.readDouble(offsets[0]);
-  object.fundUuid = reader.readStringOrNull(offsets[1]);
+  object.category = reader.readStringOrNull(offsets[1]);
+  object.fundUuid = reader.readStringOrNull(offsets[2]);
   object.id = id;
-  object.loggedAt = reader.readDateTime(offsets[2]);
-  object.purpose = reader.readString(offsets[3]);
-  object.uuid = reader.readString(offsets[4]);
+  object.loggedAt = reader.readDateTime(offsets[3]);
+  object.purpose = reader.readString(offsets[4]);
+  object.uuid = reader.readString(offsets[5]);
   return object;
 }
 
@@ -155,10 +168,12 @@ P _expenseEntryDeserializeProp<P>(
     case 1:
       return (reader.readStringOrNull(offset)) as P;
     case 2:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 3:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 4:
+      return (reader.readString(offset)) as P;
+    case 5:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -584,6 +599,160 @@ extension ExpenseEntryQueryFilter
         upper: upper,
         includeUpper: includeUpper,
         epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<ExpenseEntry, ExpenseEntry, QAfterFilterCondition>
+      categoryIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'category',
+      ));
+    });
+  }
+
+  QueryBuilder<ExpenseEntry, ExpenseEntry, QAfterFilterCondition>
+      categoryIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'category',
+      ));
+    });
+  }
+
+  QueryBuilder<ExpenseEntry, ExpenseEntry, QAfterFilterCondition>
+      categoryEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'category',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ExpenseEntry, ExpenseEntry, QAfterFilterCondition>
+      categoryGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'category',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ExpenseEntry, ExpenseEntry, QAfterFilterCondition>
+      categoryLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'category',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ExpenseEntry, ExpenseEntry, QAfterFilterCondition>
+      categoryBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'category',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ExpenseEntry, ExpenseEntry, QAfterFilterCondition>
+      categoryStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'category',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ExpenseEntry, ExpenseEntry, QAfterFilterCondition>
+      categoryEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'category',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ExpenseEntry, ExpenseEntry, QAfterFilterCondition>
+      categoryContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'category',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ExpenseEntry, ExpenseEntry, QAfterFilterCondition>
+      categoryMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'category',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ExpenseEntry, ExpenseEntry, QAfterFilterCondition>
+      categoryIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'category',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<ExpenseEntry, ExpenseEntry, QAfterFilterCondition>
+      categoryIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'category',
+        value: '',
       ));
     });
   }
@@ -1142,6 +1311,18 @@ extension ExpenseEntryQuerySortBy
     });
   }
 
+  QueryBuilder<ExpenseEntry, ExpenseEntry, QAfterSortBy> sortByCategory() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'category', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ExpenseEntry, ExpenseEntry, QAfterSortBy> sortByCategoryDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'category', Sort.desc);
+    });
+  }
+
   QueryBuilder<ExpenseEntry, ExpenseEntry, QAfterSortBy> sortByFundUuid() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'fundUuid', Sort.asc);
@@ -1202,6 +1383,18 @@ extension ExpenseEntryQuerySortThenBy
   QueryBuilder<ExpenseEntry, ExpenseEntry, QAfterSortBy> thenByAmountDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'amount', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ExpenseEntry, ExpenseEntry, QAfterSortBy> thenByCategory() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'category', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ExpenseEntry, ExpenseEntry, QAfterSortBy> thenByCategoryDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'category', Sort.desc);
     });
   }
 
@@ -1274,6 +1467,13 @@ extension ExpenseEntryQueryWhereDistinct
     });
   }
 
+  QueryBuilder<ExpenseEntry, ExpenseEntry, QDistinct> distinctByCategory(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'category', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<ExpenseEntry, ExpenseEntry, QDistinct> distinctByFundUuid(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -1313,6 +1513,12 @@ extension ExpenseEntryQueryProperty
   QueryBuilder<ExpenseEntry, double, QQueryOperations> amountProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'amount');
+    });
+  }
+
+  QueryBuilder<ExpenseEntry, String?, QQueryOperations> categoryProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'category');
     });
   }
 

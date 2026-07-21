@@ -11,6 +11,7 @@ class ExpenseEntry {
 
   late double amount;
   late String purpose;
+  String? category;
 
   @Index()
   String? fundUuid;

@@ -6,6 +6,8 @@ import '../../core/theme.dart';
 import '../../data/models/recurring_transaction.dart';
 import '../../domain/providers/fund_providers.dart';
 import '../../domain/providers/recurring_transaction_providers.dart';
+import '../../domain/providers/income_providers.dart';
+import '../../domain/providers/expense_providers.dart';
 
 const _kIncomeGreen = Color(0xFF3DAA6E);
 const _kExpenseRed = AppColors.destructive;
@@ -276,6 +278,7 @@ class _EditRecurringSheetState extends ConsumerState<_EditRecurringSheet> {
   late final TextEditingController _titleCtrl;
   late DateTime _startAt;
   late String? _selectedFundUuid;
+  late String? _selectedCategory;
   late RecurringTransactionType _type;
   late RecurrenceFrequency _frequency;
   bool _isActive = true;
@@ -289,6 +292,7 @@ class _EditRecurringSheetState extends ConsumerState<_EditRecurringSheet> {
     _titleCtrl = TextEditingController(text: widget.rule.title);
     _startAt = widget.rule.startAt;
     _selectedFundUuid = widget.rule.fundUuid;
+    _selectedCategory = widget.rule.category;
     _type = _typeFromCode(widget.rule.type);
     _frequency = _frequencyFromCode(widget.rule.frequency);
     _isActive = widget.rule.isActive;
@@ -314,6 +318,7 @@ class _EditRecurringSheetState extends ConsumerState<_EditRecurringSheet> {
     widget.rule
       ..amount = amount
       ..title = title
+      ..category = _selectedCategory
       ..fundUuid = _selectedFundUuid
       ..startAt = _startAt
       ..type = _type.index
@@ -477,6 +482,38 @@ class _EditRecurringSheetState extends ConsumerState<_EditRecurringSheet> {
                   decoration: const InputDecoration(
                     hintText: 'e.g. Salary, Rent, Subscription...',
                   ),
+                ),
+                const SizedBox(height: 20),
+                const _SheetLabel('CATEGORY'),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  value: _selectedCategory,
+                  decoration: const InputDecoration(
+                    hintText: 'Select category (optional)',
+                  ),
+                  icon: const Icon(Icons.expand_more),
+                  style: const TextStyle(
+                    fontFamily: 'IBMPlexMono',
+                    fontSize: 12,
+                    color: AppColors.textPrimary,
+                  ),
+                  dropdownColor: AppColors.backgroundElevated,
+                  items: [
+                    const DropdownMenuItem<String>(
+                      value: null,
+                      child: Text('None'),
+                    ),
+                    ...(_type == RecurringTransactionType.income
+                            ? ref.watch(incomeCategoriesProvider)
+                            : ref.watch(expenseCategoriesProvider))
+                        .map((cat) {
+                      return DropdownMenuItem(
+                        value: cat,
+                        child: Text(cat),
+                      );
+                    }),
+                  ],
+                  onChanged: (value) => setState(() => _selectedCategory = value),
                 ),
                 const SizedBox(height: 20),
                 _SheetLabel(

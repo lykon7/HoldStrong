@@ -811,6 +811,7 @@ class _TransactionItem {
     required this.loggedAt,
     required this.amount,
     required this.title,
+    this.category,
     required this.income,
     required this.expense,
   });
@@ -821,6 +822,7 @@ class _TransactionItem {
       loggedAt: entry.loggedAt,
       amount: entry.amount,
       title: entry.source,
+      category: entry.category,
       income: entry,
       expense: null,
     );
@@ -832,6 +834,7 @@ class _TransactionItem {
       loggedAt: entry.loggedAt,
       amount: entry.amount,
       title: entry.purpose,
+      category: entry.category,
       income: null,
       expense: entry,
     );
@@ -841,6 +844,7 @@ class _TransactionItem {
   final DateTime loggedAt;
   final double amount;
   final String title;
+  final String? category;
   final IncomeEntry? income;
   final ExpenseEntry? expense;
 
@@ -961,6 +965,24 @@ class _TransactionRow extends StatelessWidget {
                       color: AppColors.textPrimary,
                     ),
                   ),
+                  if (item.category != null && item.category!.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.cardBorder,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        item.category!,
+                        style: const TextStyle(
+                          fontFamily: 'IBMPlexMono',
+                          fontSize: 9,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 4),
                   Text.rich(
                     TextSpan(
@@ -1087,6 +1109,7 @@ class _AddIncomeSheetState extends ConsumerState<_AddIncomeSheet> {
 
   DateTime _loggedAt = DateTime.now();
   String? _selectedFundUuid;
+  String? _selectedCategory;
   bool _saving = false;
   bool _isRecurring = false;
   RecurrenceFrequency _frequency = RecurrenceFrequency.monthly;
@@ -1120,6 +1143,7 @@ class _AddIncomeSheetState extends ConsumerState<_AddIncomeSheet> {
       ..uuid = _uuid.v4()
       ..amount = amount
       ..source = source
+      ..category = _selectedCategory
       ..fundUuid = _selectedFundUuid
       ..loggedAt = _loggedAt;
 
@@ -1130,7 +1154,8 @@ class _AddIncomeSheetState extends ConsumerState<_AddIncomeSheet> {
         ..type = RecurringTransactionType.income.index
         ..amount = amount
         ..title = source
-        ..fundUuid = _selectedFundUuid
+        ..category = _selectedCategory
+      ..fundUuid = _selectedFundUuid
         ..startAt = _loggedAt
         ..lastGeneratedAt = _loggedAt
         ..frequency = _frequency.index
@@ -1313,6 +1338,36 @@ class _AddIncomeSheetState extends ConsumerState<_AddIncomeSheet> {
                   decoration: const InputDecoration(
                     hintText: 'or type a custom source...',
                   ),
+                ),
+                const SizedBox(height: 20),
+                const SizedBox(height: 20),
+                const _SheetLabel('CATEGORY'),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  value: _selectedCategory,
+                  decoration: const InputDecoration(
+                    hintText: 'Select category (optional)',
+                  ),
+                  icon: const Icon(Icons.expand_more),
+                  style: const TextStyle(
+                    fontFamily: 'IBMPlexMono',
+                    fontSize: 12,
+                    color: AppColors.textPrimary,
+                  ),
+                  dropdownColor: AppColors.backgroundElevated,
+                  items: [
+                    const DropdownMenuItem<String>(
+                      value: null,
+                      child: Text('None'),
+                    ),
+                    ...ref.watch(incomeCategoriesProvider).map((cat) {
+                      return DropdownMenuItem(
+                        value: cat,
+                        child: Text(cat),
+                      );
+                    }),
+                  ],
+                  onChanged: (value) => setState(() => _selectedCategory = value),
                 ),
                 const SizedBox(height: 20),
                 const _SheetLabel('ADD TO FUND'),
@@ -1519,6 +1574,7 @@ class _EditIncomeSheetState extends ConsumerState<_EditIncomeSheet> {
   late final TextEditingController _sourceCtrl;
   late DateTime _loggedAt;
   late String? _selectedFundUuid;
+  late String? _selectedCategory;
   bool _saving = false;
 
   @override
@@ -1528,6 +1584,7 @@ class _EditIncomeSheetState extends ConsumerState<_EditIncomeSheet> {
     _sourceCtrl = TextEditingController(text: widget.entry.source);
     _loggedAt = widget.entry.loggedAt;
     _selectedFundUuid = widget.entry.fundUuid;
+    _selectedCategory = widget.entry.category;
   }
 
   @override
@@ -1551,6 +1608,7 @@ class _EditIncomeSheetState extends ConsumerState<_EditIncomeSheet> {
           uuid: widget.entry.uuid,
           amount: amount,
           source: source,
+          category: _selectedCategory,
           fundUuid: _selectedFundUuid,
           loggedAt: _loggedAt,
         );
@@ -1728,6 +1786,35 @@ class _EditIncomeSheetState extends ConsumerState<_EditIncomeSheet> {
                   ),
                 ),
                 const SizedBox(height: 20),
+                const _SheetLabel('CATEGORY'),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  value: _selectedCategory,
+                  decoration: const InputDecoration(
+                    hintText: 'Select category (optional)',
+                  ),
+                  icon: const Icon(Icons.expand_more),
+                  style: const TextStyle(
+                    fontFamily: 'IBMPlexMono',
+                    fontSize: 12,
+                    color: AppColors.textPrimary,
+                  ),
+                  dropdownColor: AppColors.backgroundElevated,
+                  items: [
+                    const DropdownMenuItem<String>(
+                      value: null,
+                      child: Text('None'),
+                    ),
+                    ...ref.watch(incomeCategoriesProvider).map((cat) {
+                      return DropdownMenuItem(
+                        value: cat,
+                        child: Text(cat),
+                      );
+                    }),
+                  ],
+                  onChanged: (value) => setState(() => _selectedCategory = value),
+                ),
+                const SizedBox(height: 20),
                 const _SheetLabel('ADD TO FUND'),
                 const SizedBox(height: 10),
                 Wrap(
@@ -1866,6 +1953,7 @@ class _AddExpenseSheetState extends ConsumerState<_AddExpenseSheet> {
 
   DateTime _loggedAt = DateTime.now();
   String? _selectedFundUuid;
+  String? _selectedCategory;
   bool _saving = false;
   bool _isRecurring = false;
   RecurrenceFrequency _frequency = RecurrenceFrequency.monthly;
@@ -1901,6 +1989,7 @@ class _AddExpenseSheetState extends ConsumerState<_AddExpenseSheet> {
       ..uuid = _uuid.v4()
       ..amount = amount
       ..purpose = purpose
+      ..category = _selectedCategory
       ..fundUuid = _selectedFundUuid
       ..loggedAt = _loggedAt;
 
@@ -1912,7 +2001,8 @@ class _AddExpenseSheetState extends ConsumerState<_AddExpenseSheet> {
         ..type = RecurringTransactionType.expense.index
         ..amount = amount
         ..title = purpose
-        ..fundUuid = _selectedFundUuid
+        ..category = _selectedCategory
+      ..fundUuid = _selectedFundUuid
         ..startAt = _loggedAt
         ..lastGeneratedAt = _loggedAt
         ..frequency = _frequency.index
@@ -2267,6 +2357,7 @@ class _EditExpenseSheetState extends ConsumerState<_EditExpenseSheet> {
   late final TextEditingController _purposeCtrl;
   late DateTime _loggedAt;
   late String? _selectedFundUuid;
+  late String? _selectedCategory;
   bool _saving = false;
 
   @override
@@ -2276,6 +2367,7 @@ class _EditExpenseSheetState extends ConsumerState<_EditExpenseSheet> {
     _purposeCtrl = TextEditingController(text: widget.entry.purpose);
     _loggedAt = widget.entry.loggedAt;
     _selectedFundUuid = widget.entry.fundUuid;
+    _selectedCategory = widget.entry.category;
   }
 
   @override
@@ -2299,6 +2391,7 @@ class _EditExpenseSheetState extends ConsumerState<_EditExpenseSheet> {
           uuid: widget.entry.uuid,
           amount: amount,
           purpose: purpose,
+          category: _selectedCategory,
           fundUuid: _selectedFundUuid,
           loggedAt: _loggedAt,
         );

@@ -412,6 +412,24 @@ class _IncomeRow extends StatelessWidget {
                       color: AppColors.textPrimary,
                     ),
                   ),
+                  if (entry.category != null && entry.category!.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.cardBorder,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        entry.category!,
+                        style: const TextStyle(
+                          fontFamily: 'IBMPlexMono',
+                          fontSize: 9,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 4),
                   Text(
                     timeFmt.format(entry.loggedAt),
@@ -487,6 +505,7 @@ class _AddIncomeSheetState extends ConsumerState<_AddIncomeSheet> {
 
   DateTime _loggedAt = DateTime.now();
   String? _selectedFundUuid;
+  String? _selectedCategory;
   bool _saving = false;
 
   @override
@@ -516,6 +535,7 @@ class _AddIncomeSheetState extends ConsumerState<_AddIncomeSheet> {
       ..uuid = _uuid.v4()
       ..amount = amount
       ..source = source
+      ..category = _selectedCategory
       ..fundUuid = _selectedFundUuid
       ..loggedAt = _loggedAt;
 
@@ -844,6 +864,7 @@ class _EditIncomeSheetState extends ConsumerState<_EditIncomeSheet> {
   late final TextEditingController _sourceCtrl;
   late DateTime _loggedAt;
   late String? _selectedFundUuid;
+  late String? _selectedCategory;
   bool _saving = false;
 
   @override
@@ -854,6 +875,7 @@ class _EditIncomeSheetState extends ConsumerState<_EditIncomeSheet> {
     _sourceCtrl = TextEditingController(text: widget.entry.source);
     _loggedAt = widget.entry.loggedAt;
     _selectedFundUuid = widget.entry.fundUuid;
+    _selectedCategory = widget.entry.category;
   }
 
   @override
@@ -877,6 +899,7 @@ class _EditIncomeSheetState extends ConsumerState<_EditIncomeSheet> {
           uuid: widget.entry.uuid,
           amount: amount,
           source: source,
+          category: _selectedCategory,
           fundUuid: _selectedFundUuid,
           loggedAt: _loggedAt,
         );
@@ -1038,6 +1061,35 @@ class _EditIncomeSheetState extends ConsumerState<_EditIncomeSheet> {
                   decoration: const InputDecoration(
                     hintText: 'or type a custom source...',
                   ),
+                ),
+                const SizedBox(height: 20),
+                const _SheetLabel('CATEGORY'),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  value: _selectedCategory,
+                  decoration: const InputDecoration(
+                    hintText: 'Select category (optional)',
+                  ),
+                  icon: const Icon(Icons.expand_more),
+                  style: const TextStyle(
+                    fontFamily: 'IBMPlexMono',
+                    fontSize: 12,
+                    color: AppColors.textPrimary,
+                  ),
+                  dropdownColor: AppColors.backgroundElevated,
+                  items: [
+                    const DropdownMenuItem<String>(
+                      value: null,
+                      child: Text('None'),
+                    ),
+                    ...ref.watch(incomeCategoriesProvider).map((cat) {
+                      return DropdownMenuItem(
+                        value: cat,
+                        child: Text(cat),
+                      );
+                    }),
+                  ],
+                  onChanged: (value) => setState(() => _selectedCategory = value),
                 ),
                 const SizedBox(height: 20),
                 const _SheetLabel('ADD TO FUND'),

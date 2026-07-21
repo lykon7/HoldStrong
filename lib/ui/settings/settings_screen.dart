@@ -284,12 +284,32 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  void _showIncomeCategoriesDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (_) => ProviderScope(
+        parent: ProviderScope.containerOf(context),
+        child: const _IncomeCategoriesDialog(),
+      ),
+    );
+  }
+
   void _showExpenseAccountsDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
       builder: (_) => ProviderScope(
         parent: ProviderScope.containerOf(context),
         child: const _ExpenseAccountsConfig(),
+      ),
+    );
+  }
+
+  void _showExpenseCategoriesDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (_) => ProviderScope(
+        parent: ProviderScope.containerOf(context),
+        child: const _ExpenseCategoriesDialog(),
       ),
     );
   }
@@ -372,11 +392,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           const SizedBox(height: 8),
 
           _ActionTile(
+            icon: Icons.local_offer_outlined,
+            label: 'INCOME CATEGORIES',
+            sublabel: 'Configure categories for income',
+            loading: false,
+            onTap: () => _showIncomeCategoriesDialog(context, ref),
+          ),
+
+          const SizedBox(height: 8),
+
+          _ActionTile(
             icon: Icons.account_balance_wallet_outlined,
             label: 'EXPENSE ACCOUNTS',
             sublabel: 'Configure which fund accounts are available for expenses',
             loading: false,
             onTap: () => _showExpenseAccountsDialog(context, ref),
+          ),
+
+          const SizedBox(height: 8),
+
+          _ActionTile(
+            icon: Icons.local_offer_outlined,
+            label: 'EXPENSE CATEGORIES',
+            sublabel: 'Configure categories for expenses',
+            loading: false,
+            onTap: () => _showExpenseCategoriesDialog(context, ref),
           ),
 
           const SizedBox(height: 32),
@@ -715,6 +755,210 @@ class _ExpenseAccountsConfig extends ConsumerWidget {
                   );
                 },
               ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('DONE',
+              style: TextStyle(
+                  fontFamily: 'IBMPlexMono', color: AppColors.accentGold)),
+        ),
+      ],
+    );
+  }
+}
+
+class _IncomeCategoriesDialog extends ConsumerStatefulWidget {
+  const _IncomeCategoriesDialog();
+  @override
+  ConsumerState<_IncomeCategoriesDialog> createState() => _IncomeCategoriesDialogState();
+}
+
+class _IncomeCategoriesDialogState extends ConsumerState<_IncomeCategoriesDialog> {
+  final _ctrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final categories = ref.watch(incomeCategoriesProvider);
+    return AlertDialog(
+      backgroundColor: AppColors.backgroundElevated,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(2)),
+        side: BorderSide(color: AppColors.cardBorder),
+      ),
+      title: const Text('INCOME CATEGORIES',
+          style: TextStyle(
+              fontFamily: 'Rajdhani',
+              fontWeight: FontWeight.w700,
+              fontSize: 18,
+              letterSpacing: 1,
+              color: AppColors.textPrimary)),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: categories.map((cat) {
+                return Chip(
+                  label: Text(cat,
+                      style: const TextStyle(
+                          fontFamily: 'IBMPlexMono',
+                          fontSize: 12,
+                          color: AppColors.textPrimary)),
+                  backgroundColor: AppColors.backgroundSurface,
+                  side: const BorderSide(color: AppColors.cardBorder),
+                  deleteIcon: const Icon(Icons.close, size: 14),
+                  deleteIconColor: AppColors.textSecondary,
+                  onDeleted: () {
+                    ref.read(incomeCategoriesProvider.notifier).removeCategory(cat);
+                  },
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _ctrl,
+                    textCapitalization: TextCapitalization.words,
+                    style: const TextStyle(
+                        fontFamily: 'IBMPlexMono',
+                        fontSize: 12,
+                        color: AppColors.textPrimary),
+                    decoration: const InputDecoration(
+                      hintText: 'New category (e.g. Salary)',
+                      isDense: true,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.add, color: AppColors.accentGold),
+                  onPressed: () {
+                    final text = _ctrl.text.trim();
+                    if (text.isNotEmpty) {
+                      ref.read(incomeCategoriesProvider.notifier).addCategory(text);
+                      _ctrl.clear();
+                    }
+                  },
+                )
+              ],
+            )
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('DONE',
+              style: TextStyle(
+                  fontFamily: 'IBMPlexMono', color: AppColors.accentGold)),
+        ),
+      ],
+    );
+  }
+}
+
+class _ExpenseCategoriesDialog extends ConsumerStatefulWidget {
+  const _ExpenseCategoriesDialog();
+  @override
+  ConsumerState<_ExpenseCategoriesDialog> createState() => _ExpenseCategoriesDialogState();
+}
+
+class _ExpenseCategoriesDialogState extends ConsumerState<_ExpenseCategoriesDialog> {
+  final _ctrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final categories = ref.watch(expenseCategoriesProvider);
+    return AlertDialog(
+      backgroundColor: AppColors.backgroundElevated,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(2)),
+        side: BorderSide(color: AppColors.cardBorder),
+      ),
+      title: const Text('EXPENSE CATEGORIES',
+          style: TextStyle(
+              fontFamily: 'Rajdhani',
+              fontWeight: FontWeight.w700,
+              fontSize: 18,
+              letterSpacing: 1,
+              color: AppColors.textPrimary)),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: categories.map((cat) {
+                return Chip(
+                  label: Text(cat,
+                      style: const TextStyle(
+                          fontFamily: 'IBMPlexMono',
+                          fontSize: 12,
+                          color: AppColors.textPrimary)),
+                  backgroundColor: AppColors.backgroundSurface,
+                  side: const BorderSide(color: AppColors.cardBorder),
+                  deleteIcon: const Icon(Icons.close, size: 14),
+                  deleteIconColor: AppColors.textSecondary,
+                  onDeleted: () {
+                    ref.read(expenseCategoriesProvider.notifier).removeCategory(cat);
+                  },
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _ctrl,
+                    textCapitalization: TextCapitalization.words,
+                    style: const TextStyle(
+                        fontFamily: 'IBMPlexMono',
+                        fontSize: 12,
+                        color: AppColors.textPrimary),
+                    decoration: const InputDecoration(
+                      hintText: 'New category (e.g. Food)',
+                      isDense: true,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.add, color: AppColors.accentGold),
+                  onPressed: () {
+                    final text = _ctrl.text.trim();
+                    if (text.isNotEmpty) {
+                      ref.read(expenseCategoriesProvider.notifier).addCategory(text);
+                      _ctrl.clear();
+                    }
+                  },
+                )
+              ],
+            )
           ],
         ),
       ),

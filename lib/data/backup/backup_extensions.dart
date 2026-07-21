@@ -102,6 +102,7 @@ extension IncomeEntryBackup on IncomeEntry {
         'uuid': uuid,
         'amount': amount,
         'source': source,
+        'category': category,
         'fundUuid': fundUuid,
         'loggedAt': loggedAt.toIso8601String(),
       };
@@ -112,6 +113,7 @@ IncomeEntry incomeEntryFromBackupJson(Map<String, dynamic> j) {
     ..uuid = j['uuid'] as String
     ..amount = (j['amount'] as num).toDouble()
     ..source = j['source'] as String
+    ..category = j['category'] as String?
     ..fundUuid = j['fundUuid'] as String?
     ..loggedAt = DateTime.parse(j['loggedAt'] as String);
 }
@@ -123,6 +125,7 @@ extension ExpenseEntryBackup on ExpenseEntry {
         'uuid': uuid,
         'amount': amount,
         'purpose': purpose,
+        'category': category,
         'fundUuid': fundUuid,
         'loggedAt': loggedAt.toIso8601String(),
       };
@@ -133,6 +136,7 @@ ExpenseEntry expenseEntryFromBackupJson(Map<String, dynamic> j) {
     ..uuid = j['uuid'] as String
     ..amount = (j['amount'] as num).toDouble()
     ..purpose = j['purpose'] as String
+    ..category = j['category'] as String?
     ..fundUuid = j['fundUuid'] as String?
     ..loggedAt = DateTime.parse(j['loggedAt'] as String);
 }
@@ -164,6 +168,7 @@ extension RecurringTransactionBackup on RecurringTransaction {
         'type': type,
         'amount': amount,
         'title': title,
+        'category': category,
         'fundUuid': fundUuid,
         'startAt': startAt.toIso8601String(),
         'lastGeneratedAt': lastGeneratedAt?.toIso8601String(),
@@ -178,6 +183,7 @@ RecurringTransaction recurringTransactionFromBackupJson(Map<String, dynamic> j) 
     ..type = j['type'] as int
     ..amount = (j['amount'] as num).toDouble()
     ..title = j['title'] as String
+    ..category = j['category'] as String?
     ..fundUuid = j['fundUuid'] as String?
     ..startAt = DateTime.parse(j['startAt'] as String)
     ..lastGeneratedAt = j['lastGeneratedAt'] != null

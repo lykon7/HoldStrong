@@ -75,6 +75,7 @@ class RecurringTransactionRepository {
                   ..uuid = _uuid.v4()
                   ..amount = rule.amount
                   ..source = rule.title
+                  ..category = rule.category
                   ..fundUuid = rule.fundUuid
                   ..loggedAt = time,
               )
@@ -87,6 +88,7 @@ class RecurringTransactionRepository {
                   ..uuid = _uuid.v4()
                   ..amount = rule.amount
                   ..purpose = rule.title
+                  ..category = rule.category
                   ..fundUuid = rule.fundUuid
                   ..loggedAt = time,
               )

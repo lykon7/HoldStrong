@@ -33,6 +33,7 @@ class IncomeRepository {
     required String uuid,
     required double amount,
     required String source,
+    required String? category,
     required String? fundUuid,
     required DateTime loggedAt,
   }) async {
@@ -43,6 +44,7 @@ class IncomeRepository {
         entry
           ..amount = amount
           ..source = source
+          ..category = category
           ..fundUuid = fundUuid
           ..loggedAt = loggedAt;
         await _isar.incomeEntrys.put(entry);

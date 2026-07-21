@@ -11,6 +11,7 @@ class IncomeEntry {
 
   late double amount;
   late String source;
+  String? category;
 
   @Index()
   String? fundUuid;

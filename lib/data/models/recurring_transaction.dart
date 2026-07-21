@@ -42,6 +42,7 @@ class RecurringTransaction {
   late int type;
   late double amount;
   late String title;
+  String? category;
 
   @Index()
   String? fundUuid;

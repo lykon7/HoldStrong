@@ -33,6 +33,7 @@ class ExpenseRepository {
     required String uuid,
     required double amount,
     required String purpose,
+    required String? category,
     required String? fundUuid,
     required DateTime loggedAt,
   }) async {
@@ -43,6 +44,7 @@ class ExpenseRepository {
         entry
           ..amount = amount
           ..purpose = purpose
+          ..category = category
           ..fundUuid = fundUuid
           ..loggedAt = loggedAt;
         await _isar.expenseEntrys.put(entry);

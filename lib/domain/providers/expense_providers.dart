@@ -37,6 +37,49 @@ class DeductibleFundAccountsNotifier extends StateNotifier<List<String>> {
   }
 }
 
+final expenseCategoriesProvider =
+    StateNotifierProvider<ExpenseCategoriesNotifier, List<String>>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return ExpenseCategoriesNotifier(prefs);
+});
+
+class ExpenseCategoriesNotifier extends StateNotifier<List<String>> {
+  ExpenseCategoriesNotifier(this._prefs) : super(_load(_prefs));
+  final SharedPreferences _prefs;
+
+  static const _key = 'configured_expense_categories';
+  static const _defaultCategories = [
+    'Fuel',
+    'Junk',
+    'Food',
+    'Gym',
+    'Bike',
+    'Grocery',
+    'Subscriptions',
+  ];
+
+  static List<String> _load(SharedPreferences prefs) {
+    return prefs.getStringList(_key) ?? _defaultCategories;
+  }
+
+  Future<void> updateCategories(List<String> categories) async {
+    await _prefs.setStringList(_key, categories);
+    state = categories;
+  }
+
+  Future<void> addCategory(String category) async {
+    if (!state.contains(category)) {
+      final newCategories = [...state, category];
+      await updateCategories(newCategories);
+    }
+  }
+
+  Future<void> removeCategory(String category) async {
+    final newCategories = state.where((c) => c != category).toList();
+    await updateCategories(newCategories);
+  }
+}
+
 final expenseRepositoryProvider = Provider<ExpenseRepository>((ref) {
   return ExpenseRepository(ref.watch(isarProvider));
 });

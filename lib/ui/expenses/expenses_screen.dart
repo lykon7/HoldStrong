@@ -475,6 +475,24 @@ class _ExpenseRow extends StatelessWidget {
                       color: AppColors.textPrimary,
                     ),
                   ),
+                  if (entry.category != null && entry.category!.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.cardBorder,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        entry.category!,
+                        style: const TextStyle(
+                          fontFamily: 'IBMPlexMono',
+                          fontSize: 9,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 4),
                   Text(
                     timeFmt.format(entry.loggedAt),
@@ -563,6 +581,7 @@ class _AddExpenseSheetState extends ConsumerState<_AddExpenseSheet> {
 
   DateTime _loggedAt = DateTime.now();
   String? _selectedFundUuid;
+  String? _selectedCategory;
   bool _saving = false;
 
   @override
@@ -594,6 +613,7 @@ class _AddExpenseSheetState extends ConsumerState<_AddExpenseSheet> {
       ..uuid = _uuid.v4()
       ..amount = amount
       ..purpose = purpose
+      ..category = _selectedCategory
       ..fundUuid = _selectedFundUuid
       ..loggedAt = _loggedAt;
 
@@ -910,6 +930,7 @@ class _EditExpenseSheetState extends ConsumerState<_EditExpenseSheet> {
   late final TextEditingController _purposeCtrl;
   late DateTime _loggedAt;
   late String? _selectedFundUuid;
+  late String? _selectedCategory;
   bool _saving = false;
 
   @override
@@ -920,6 +941,7 @@ class _EditExpenseSheetState extends ConsumerState<_EditExpenseSheet> {
     _purposeCtrl = TextEditingController(text: widget.entry.purpose);
     _loggedAt = widget.entry.loggedAt;
     _selectedFundUuid = widget.entry.fundUuid;
+    _selectedCategory = widget.entry.category;
   }
 
   @override
@@ -943,6 +965,7 @@ class _EditExpenseSheetState extends ConsumerState<_EditExpenseSheet> {
           uuid: widget.entry.uuid,
           amount: amount,
           purpose: purpose,
+          category: _selectedCategory,
           fundUuid: _selectedFundUuid,
           loggedAt: _loggedAt,
         );

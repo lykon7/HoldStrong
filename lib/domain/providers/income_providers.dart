@@ -40,6 +40,45 @@ class IncomeSourcesNotifier extends StateNotifier<List<String>> {
   }
 }
 
+final incomeCategoriesProvider =
+    StateNotifierProvider<IncomeCategoriesNotifier, List<String>>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return IncomeCategoriesNotifier(prefs);
+});
+
+class IncomeCategoriesNotifier extends StateNotifier<List<String>> {
+  IncomeCategoriesNotifier(this._prefs) : super(_load(_prefs));
+  final SharedPreferences _prefs;
+
+  static const _key = 'configured_income_categories';
+  static const _defaultCategories = [
+    'Passive Yield',
+    'Active Yield 1',
+    'Active Yield 2',
+  ];
+
+  static List<String> _load(SharedPreferences prefs) {
+    return prefs.getStringList(_key) ?? _defaultCategories;
+  }
+
+  Future<void> updateCategories(List<String> categories) async {
+    await _prefs.setStringList(_key, categories);
+    state = categories;
+  }
+
+  Future<void> addCategory(String category) async {
+    if (!state.contains(category)) {
+      final newCategories = [...state, category];
+      await updateCategories(newCategories);
+    }
+  }
+
+  Future<void> removeCategory(String category) async {
+    final newCategories = state.where((c) => c != category).toList();
+    await updateCategories(newCategories);
+  }
+}
+
 final incomeRepositoryProvider = Provider<IncomeRepository>((ref) {
   return IncomeRepository(ref.watch(isarProvider));
 });
