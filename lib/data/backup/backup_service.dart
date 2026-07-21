@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/goal.dart';
 import '../models/resist_entry.dart';
@@ -44,9 +45,10 @@ class ImportResult {
 }
 
 class BackupService {
-  const BackupService(this._isar);
+  const BackupService(this._isar, this._prefs);
 
   final Isar _isar;
+  final SharedPreferences _prefs;
 
   // ─── Export ─────────────────────────────────────────────────────────────────
 
@@ -83,6 +85,8 @@ class BackupService {
         'accountTransfers': transfers.map((e) => e.toBackupJson()).toList(),
         'todos': todos.map((e) => e.toBackupJson()).toList(),
         'workouts': workouts.map((e) => e.toBackupJson()).toList(),
+        'incomeCategories': _prefs.getStringList('configured_income_categories'),
+        'expenseCategories': _prefs.getStringList('configured_expense_categories'),
       };
 
       final jsonStr = const JsonEncoder.withIndent('  ').convert(payload);
@@ -127,6 +131,16 @@ class BackupService {
         'todos': 0,
         'workouts': 0,
       };
+
+      // Import SharedPreferences categories if present
+      if (json.containsKey('incomeCategories') && json['incomeCategories'] != null) {
+        final List<dynamic> incCats = json['incomeCategories'];
+        await _prefs.setStringList('configured_income_categories', incCats.map((e) => e.toString()).toList());
+      }
+      if (json.containsKey('expenseCategories') && json['expenseCategories'] != null) {
+        final List<dynamic> expCats = json['expenseCategories'];
+        await _prefs.setStringList('configured_expense_categories', expCats.map((e) => e.toString()).toList());
+      }
 
       await _isar.writeTxn(() async {
         // Goals — merge by uuid
