@@ -28,10 +28,10 @@ class HubShortcuts extends StatelessWidget {
             ),
             _buildShortcut(
               context,
-              title: 'Workout',
-              icon: Icons.fitness_center,
+              title: 'Resists',
+              icon: Icons.shield_outlined,
               color: AppColors.accentGold,
-              route: '/hub/workout',
+              route: '/hub/resists',
             ),
             _buildShortcut(
               context,

@@ -30,10 +30,10 @@ class HubScreen extends StatelessWidget {
               onTap: () => context.push('/hub/wishlist'),
             ),
             _HubCard(
-              title: 'Workout',
-              icon: Icons.fitness_center,
+              title: 'Resists',
+              icon: Icons.shield_outlined,
               color: Colors.orange,
-              onTap: () => context.push('/hub/workout'),
+              onTap: () => context.push('/hub/resists'),
             ),
             _HubCard(
               title: 'To-Do List',

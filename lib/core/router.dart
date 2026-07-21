@@ -46,16 +46,16 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const HomeScreen(),
           ),
           GoRoute(
-            path: '/resists',
-            builder: (context, state) => const ResistsScreen(),
+            path: '/workout',
+            builder: (context, state) => const WorkoutScreen(),
           ),
           GoRoute(
             path: '/history',
-            redirect: (context, state) => '/resists',
+            redirect: (context, state) => '/hub/resists',
           ),
           GoRoute(
             path: '/goals',
-            redirect: (context, state) => '/resists',
+            redirect: (context, state) => '/hub/resists',
           ),
           GoRoute(
             path: '/transactions',
@@ -92,8 +92,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const WishlistScreen(),
       ),
       GoRoute(
-        path: '/hub/workout',
-        builder: (context, state) => const WorkoutScreen(),
+        path: '/hub/resists',
+        builder: (context, state) => const ResistsScreen(),
       ),
       GoRoute(
         path: '/hub/todo',
@@ -179,9 +179,7 @@ class _MainShell extends ConsumerWidget {
 
   int _calculateSelectedIndex(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;
-    if (location.startsWith('/resists') ||
-        location.startsWith('/history') ||
-        location.startsWith('/goals')) {
+    if (location.startsWith('/workout')) {
       return 1;
     }
     if (location.startsWith('/transactions') ||
@@ -199,7 +197,7 @@ class _MainShell extends ConsumerWidget {
     return 0;
   }
 
-  static const _tabs = ['/', '/resists', '/transactions', '/funds', '/hub'];
+  static const _tabs = ['/', '/workout', '/transactions', '/funds', '/hub'];
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -213,7 +211,7 @@ class _MainShell extends ConsumerWidget {
         },
         destinations: const [
           NavigationDestination(icon: Icon(Icons.home_outlined), label: 'HOME'),
-          NavigationDestination(icon: Icon(Icons.shield_outlined), label: 'RESISTS'),
+          NavigationDestination(icon: Icon(Icons.fitness_center), label: 'WORKOUT'),
           NavigationDestination(icon: Icon(Icons.swap_horiz), label: 'TRANSACTIONS'),
           NavigationDestination(icon: Icon(Icons.savings_outlined), label: 'FUNDS'),
           NavigationDestination(icon: Icon(Icons.grid_view), label: 'HUB'),
