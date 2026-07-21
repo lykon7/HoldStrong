@@ -27,6 +27,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   bool _showSearch = false;
   final TextEditingController _searchCtrl = TextEditingController();
   String _searchQuery = '';
+  Set<String> _selectedCategories = {};
 
   @override
   void initState() {
@@ -76,6 +77,15 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                 }
               });
             },
+          ),
+          IconButton(
+            icon: Icon(
+              Icons.filter_list,
+              size: 20,
+              color: _selectedCategories.isNotEmpty ? AppColors.accentGold : AppColors.textPrimary,
+            ),
+            tooltip: 'Filter by Category',
+            onPressed: () => _showCategoryFilterDialog(context, ref),
           ),
           IconButton(
             icon: const Icon(Icons.repeat, size: 20),
@@ -206,6 +216,13 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
       }).toList();
     }
 
+    if (_selectedCategories.isNotEmpty) {
+      items = items.where((item) {
+        final cat = item.category ?? 'Uncategorized';
+        return _selectedCategories.contains(cat);
+      }).toList();
+    }
+
     if (items.isEmpty) {
       if (_searchQuery.isNotEmpty) {
         return _SearchEmptyState(query: _searchQuery);
@@ -299,6 +316,73 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
               }
             },
           ),
+        );
+      },
+    );
+  }
+
+  void _showCategoryFilterDialog(BuildContext context, WidgetRef ref) {
+    final incomeCats = ref.read(incomeCategoriesProvider).valueOrNull ?? [];
+    final expenseCats = ref.read(expenseCategoriesProvider).valueOrNull ?? [];
+    final allCats = <String>{...incomeCats, ...expenseCats, 'Uncategorized'}.toList()..sort();
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setStateDialog) {
+            return AlertDialog(
+              backgroundColor: AppColors.backgroundElevated,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4), side: const BorderSide(color: AppColors.cardBorder)),
+              title: const Text('FILTER BY CATEGORY', style: TextStyle(fontFamily: 'Rajdhani', fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.textPrimary)),
+              content: SizedBox(
+                width: double.maxFinite,
+                height: 300,
+                child: ListView.builder(
+                  itemCount: allCats.length,
+                  itemBuilder: (context, index) {
+                    final cat = allCats[index];
+                    final isSelected = _selectedCategories.contains(cat);
+                    return CheckboxListTile(
+                      title: Text(cat, style: const TextStyle(fontFamily: 'IBMPlexMono', fontSize: 13, color: AppColors.textPrimary)),
+                      value: isSelected,
+                      activeColor: AppColors.accentGold,
+                      checkColor: AppColors.backgroundPrimary,
+                      side: const BorderSide(color: AppColors.cardBorder),
+                      dense: true,
+                      controlAffinity: ListTileControlAffinity.leading,
+                      contentPadding: EdgeInsets.zero,
+                      onChanged: (val) {
+                        setStateDialog(() {
+                          if (val == true) {
+                            _selectedCategories.add(cat);
+                          } else {
+                            _selectedCategories.remove(cat);
+                          }
+                        });
+                        setState(() {});
+                      },
+                    );
+                  },
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    setStateDialog(() {
+                      _selectedCategories.clear();
+                    });
+                    setState(() {});
+                  },
+                  child: const Text('CLEAR ALL', style: TextStyle(fontFamily: 'IBMPlexMono', color: AppColors.textSecondary)),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('DONE', style: TextStyle(fontFamily: 'IBMPlexMono', color: AppColors.accentGold)),
+                ),
+              ],
+            );
+          },
         );
       },
     );
