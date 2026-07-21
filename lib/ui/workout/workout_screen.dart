@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme.dart';
 import '../../domain/providers/workout_providers.dart';
 import '../../data/models/workout_entry.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 
 class WorkoutScreen extends ConsumerWidget {
   const WorkoutScreen({super.key});
@@ -161,7 +161,7 @@ class WorkoutScreen extends ConsumerWidget {
     final firstWeekday = firstDay.weekday; 
     final emptyCells = firstWeekday - 1; // Start on Monday
 
-    final entryDates = entries.map((e) => e.date).toSet();
+    final entryMap = {for (var e in entries) e.date: e};
 
     return Column(
       children: [
@@ -194,7 +194,8 @@ class WorkoutScreen extends ConsumerWidget {
             final day = index - emptyCells + 1;
             final date = DateTime(now.year, now.month, day);
             final isFuture = date.isAfter(today);
-            final isWorkoutDay = entryDates.contains(date);
+            final entry = entryMap[date];
+            final isWorkoutDay = entry != null;
 
             Color bgColor;
             if (isWorkoutDay) {
@@ -207,6 +208,18 @@ class WorkoutScreen extends ConsumerWidget {
             }
 
             return InkWell(
+              onLongPress: (isWorkoutDay && entry.weight != null)
+                  ? () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Weight: ${entry.weight} kg',
+                              style: const TextStyle(fontFamily: 'IBMPlexMono')),
+                          duration: const Duration(seconds: 2),
+                          backgroundColor: AppColors.backgroundElevated,
+                        ),
+                      );
+                    }
+                  : null,
               onTap: isFuture
                   ? null
                   : () {
@@ -362,13 +375,33 @@ class _WeightLinePainter extends CustomPainter {
       }
     }
 
-    // Draw grid lines
+    // Draw grid lines and labels
     final gridPaint = Paint()
       ..color = AppColors.cardBorder
       ..strokeWidth = 1;
-    canvas.drawLine(const Offset(0, 0), Offset(size.width, 0), gridPaint);
-    canvas.drawLine(Offset(0, size.height / 2), Offset(size.width, size.height / 2), gridPaint);
-    canvas.drawLine(Offset(0, size.height), Offset(size.width, size.height), gridPaint);
+      
+    final textStyle = const TextStyle(
+      color: AppColors.textSecondary,
+      fontFamily: 'IBMPlexMono',
+      fontSize: 9,
+    );
+
+    void drawGridLine(double y, double weightValue, bool textBelow) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+      
+      final textSpan = TextSpan(text: '${weightValue.toStringAsFixed(1)} kg', style: textStyle);
+      final textPainter = TextPainter(
+        text: textSpan,
+        textDirection: TextDirection.ltr,
+      );
+      textPainter.layout();
+      final yOffset = textBelow ? y + 2 : y - textPainter.height - 2;
+      textPainter.paint(canvas, Offset(4, yOffset));
+    }
+
+    drawGridLine(0, top, true);
+    drawGridLine(size.height / 2, bottom + (yRange / 2), false);
+    drawGridLine(size.height, bottom, false);
 
     final fillRect = Rect.fromLTWH(0, 0, size.width, size.height);
 
