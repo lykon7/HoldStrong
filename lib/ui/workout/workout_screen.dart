@@ -95,7 +95,7 @@ class WorkoutScreen extends ConsumerWidget {
     }
   }
 
-  Future<void> _promptForUntoggle(BuildContext context, WidgetRef ref, DateTime date) async {
+  Future<void> _promptForUntoggle(BuildContext context, WidgetRef ref, WorkoutEntry entry) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -104,18 +104,33 @@ class WorkoutScreen extends ConsumerWidget {
           borderRadius: BorderRadius.circular(2),
           side: const BorderSide(color: AppColors.cardBorder),
         ),
-        title: const Text('REMOVE WORKOUT?',
+        title: const Text('WORKOUT DETAILS',
             style: TextStyle(
                 fontFamily: 'Rajdhani',
                 fontWeight: FontWeight.w700,
                 fontSize: 18,
                 letterSpacing: 1,
                 color: AppColors.textPrimary)),
-        content: const Text('This will remove the workout and weight data for this day. This cannot be undone.',
-            style: TextStyle(
-                fontFamily: 'IBMPlexMono',
-                fontSize: 12,
-                color: AppColors.textSecondary)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (entry.weight != null) ...[
+              Text('Weight logged: ${entry.weight} kg',
+                  style: const TextStyle(
+                      fontFamily: 'IBMPlexMono',
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: AppColors.textPrimary)),
+              const SizedBox(height: 12),
+            ],
+            const Text('Are you sure you want to remove this workout? This will delete the entry and weight data for this day. This cannot be undone.',
+                style: TextStyle(
+                    fontFamily: 'IBMPlexMono',
+                    fontSize: 12,
+                    color: AppColors.textSecondary)),
+          ],
+        ),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -129,7 +144,7 @@ class WorkoutScreen extends ConsumerWidget {
       ),
     );
     if (confirm == true) {
-      ref.read(workoutControllerProvider.notifier).toggleWorkout(date);
+      ref.read(workoutControllerProvider.notifier).toggleWorkout(entry.date);
     }
   }
 
@@ -246,23 +261,11 @@ class WorkoutScreen extends ConsumerWidget {
             }
 
             return InkWell(
-              onLongPress: (isWorkoutDay && entry.weight != null)
-                  ? () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Weight: ${entry.weight} kg',
-                              style: const TextStyle(fontFamily: 'IBMPlexMono')),
-                          duration: const Duration(seconds: 2),
-                          backgroundColor: AppColors.backgroundElevated,
-                        ),
-                      );
-                    }
-                  : null,
               onTap: isFuture
                   ? null
                   : () {
                       if (isWorkoutDay) {
-                        _promptForUntoggle(context, ref, date);
+                        _promptForUntoggle(context, ref, entry!);
                       } else {
                         _promptForWeight(context, ref, date);
                       }
