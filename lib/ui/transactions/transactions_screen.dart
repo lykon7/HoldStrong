@@ -47,16 +47,52 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   Widget build(BuildContext context) {
     final allIncome = ref.watch(allIncomeProvider);
     final allExpenses = ref.watch(allExpensesProvider);
-    final dailyIncome = ref.watch(dailyIncomeTotalProvider);
-    final dailyExpense = ref.watch(dailyExpenseTotalProvider);
-    final weeklyIncome = ref.watch(weeklyIncomeTotalProvider);
-    final weeklyExpense = ref.watch(weeklyExpenseTotalProvider);
-    final lastWeekIncome = ref.watch(lastWeekIncomeTotalProvider);
-    final lastWeekExpense = ref.watch(lastWeekExpenseTotalProvider);
-    final monthlyIncome = ref.watch(monthlyIncomeTotalProvider);
-    final monthlyExpense = ref.watch(monthlyExpenseTotalProvider);
-    final lastMonthIncome = ref.watch(lastMonthIncomeTotalProvider);
-    final lastMonthExpense = ref.watch(lastMonthExpenseTotalProvider);
+
+    List<_TransactionItem>? filteredItems;
+    if (allIncome is AsyncData && allExpenses is AsyncData) {
+      filteredItems = _getFilteredItems(allIncome.value!, allExpenses.value!);
+    }
+
+    double? dInc, dExp, wInc, wExp, lwInc, lwExp, mInc, mExp, lmInc, lmExp;
+    
+    if (filteredItems != null) {
+      double valDInc = 0, valDExp = 0, valWInc = 0, valWExp = 0, valLwInc = 0, valLwExp = 0, valMInc = 0, valMExp = 0, valLmInc = 0, valLmExp = 0;
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final weekStart = today.subtract(Duration(days: today.weekday - 1));
+      final weekEnd = weekStart.add(const Duration(days: 6));
+      final lastWeekStart = weekStart.subtract(const Duration(days: 7));
+      final lastWeekEnd = weekStart.subtract(const Duration(days: 1));
+      
+      for (final item in filteredItems) {
+        final d = item.loggedAt;
+        final date = DateTime(d.year, d.month, d.day);
+        final amt = item.amount;
+        
+        if (date == today) {
+          if (item.isIncome) valDInc += amt; else valDExp += amt;
+        }
+        if (!date.isBefore(weekStart) && !date.isAfter(weekEnd)) {
+          if (item.isIncome) valWInc += amt; else valWExp += amt;
+        }
+        if (!date.isBefore(lastWeekStart) && !date.isAfter(lastWeekEnd)) {
+          if (item.isIncome) valLwInc += amt; else valLwExp += amt;
+        }
+        if (date.year == now.year && date.month == now.month) {
+          if (item.isIncome) valMInc += amt; else valMExp += amt;
+        }
+        
+        final isLastMonth = (now.month == 1) 
+            ? (date.year == now.year - 1 && date.month == 12)
+            : (date.year == now.year && date.month == now.month - 1);
+        if (isLastMonth) {
+          if (item.isIncome) valLmInc += amt; else valLmExp += amt;
+        }
+      }
+      dInc = valDInc; dExp = valDExp; wInc = valWInc; wExp = valWExp;
+      lwInc = valLwInc; lwExp = valLwExp; mInc = valMInc; mExp = valMExp;
+      lmInc = valLmInc; lmExp = valLmExp;
+    }
 
     return Scaffold(
       backgroundColor: AppColors.backgroundPrimary,
@@ -102,16 +138,16 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
       body: Column(
         children: [
           _SummaryStrip(
-            dailyIncome: dailyIncome,
-            dailyExpense: dailyExpense,
-            weeklyIncome: weeklyIncome,
-            weeklyExpense: weeklyExpense,
-            lastWeekIncome: lastWeekIncome,
-            lastWeekExpense: lastWeekExpense,
-            monthlyIncome: monthlyIncome,
-            monthlyExpense: monthlyExpense,
-            lastMonthIncome: lastMonthIncome,
-            lastMonthExpense: lastMonthExpense,
+            dailyIncome: dInc,
+            dailyExpense: dExp,
+            weeklyIncome: wInc,
+            weeklyExpense: wExp,
+            lastWeekIncome: lwInc,
+            lastWeekExpense: lwExp,
+            monthlyIncome: mInc,
+            monthlyExpense: mExp,
+            lastMonthIncome: lmInc,
+            lastMonthExpense: lmExp,
           ),
           const Divider(height: 1),
           if (_showSearch)
@@ -182,8 +218,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                 data: (expenseEntries) => _buildTransactionList(
                   context,
                   ref,
-                  incomeEntries,
-                  expenseEntries,
+                  filteredItems!,
                 ),
               ),
             ),
@@ -194,9 +229,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     );
   }
 
-  Widget _buildTransactionList(
-    BuildContext context,
-    WidgetRef ref,
+  List<_TransactionItem> _getFilteredItems(
     List<IncomeEntry> incomeEntries,
     List<ExpenseEntry> expenseEntries,
   ) {
@@ -222,7 +255,15 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
         return _selectedCategories.contains(cat);
       }).toList();
     }
+    
+    return items;
+  }
 
+  Widget _buildTransactionList(
+    BuildContext context,
+    WidgetRef ref,
+    List<_TransactionItem> items,
+  ) {
     if (items.isEmpty) {
       if (_searchQuery.isNotEmpty) {
         return _SearchEmptyState(query: _searchQuery);
@@ -233,23 +274,14 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     items.sort((a, b) => b.loggedAt.compareTo(a.loggedAt));
 
     final incomeTotals = <DateTime, double>{};
-    for (final entry in incomeEntries) {
-      final day = DateTime(
-        entry.loggedAt.year,
-        entry.loggedAt.month,
-        entry.loggedAt.day,
-      );
-      incomeTotals[day] = (incomeTotals[day] ?? 0) + entry.amount;
-    }
-
     final expenseTotals = <DateTime, double>{};
-    for (final entry in expenseEntries) {
-      final day = DateTime(
-        entry.loggedAt.year,
-        entry.loggedAt.month,
-        entry.loggedAt.day,
-      );
-      expenseTotals[day] = (expenseTotals[day] ?? 0) + entry.amount;
+    for (final item in items) {
+      final day = DateTime(item.loggedAt.year, item.loggedAt.month, item.loggedAt.day);
+      if (item.isIncome) {
+        incomeTotals[day] = (incomeTotals[day] ?? 0) + item.amount;
+      } else {
+        expenseTotals[day] = (expenseTotals[day] ?? 0) + item.amount;
+      }
     }
 
     final now = DateTime.now();
@@ -541,16 +573,16 @@ class _SummaryStrip extends StatelessWidget {
     required this.lastMonthExpense,
   });
 
-  final AsyncValue<double> dailyIncome;
-  final AsyncValue<double> dailyExpense;
-  final AsyncValue<double> weeklyIncome;
-  final AsyncValue<double> weeklyExpense;
-  final AsyncValue<double> lastWeekIncome;
-  final AsyncValue<double> lastWeekExpense;
-  final AsyncValue<double> monthlyIncome;
-  final AsyncValue<double> monthlyExpense;
-  final AsyncValue<double> lastMonthIncome;
-  final AsyncValue<double> lastMonthExpense;
+  final double? dailyIncome;
+  final double? dailyExpense;
+  final double? weeklyIncome;
+  final double? weeklyExpense;
+  final double? lastWeekIncome;
+  final double? lastWeekExpense;
+  final double? monthlyIncome;
+  final double? monthlyExpense;
+  final double? lastMonthIncome;
+  final double? lastMonthExpense;
 
   @override
   Widget build(BuildContext context) {
@@ -633,16 +665,16 @@ class _SummaryCard extends StatelessWidget {
 
   final String label;
   final String sublabel;
-  final AsyncValue<double> incomeValue;
-  final AsyncValue<double> expenseValue;
+  final double? incomeValue;
+  final double? expenseValue;
   final Color accentColor;
   /// When true, renders with a slightly dimmed background to visually
   /// distinguish historical (past) cards from current-period cards.
   final bool muted;
 
   Widget _buildNetValue() {
-    if (incomeValue.hasValue && expenseValue.hasValue) {
-      final net = incomeValue.value! - expenseValue.value!;
+    if (incomeValue != null && expenseValue != null) {
+      final net = incomeValue! - expenseValue!;
       final color = net >= 0 ? _kIncomeGreen : _kExpenseRed;
       final prefix = net >= 0 ? '+' : '';
       final fmt = NumberFormat('#,##0', 'en_US');
@@ -747,7 +779,7 @@ class _SummaryValueLine extends StatelessWidget {
   });
 
   final String label;
-  final AsyncValue<double> value;
+  final double? value;
   final Color color;
 
   @override
@@ -764,34 +796,25 @@ class _SummaryValueLine extends StatelessWidget {
       children: [
         Text(label, style: labelStyle),
         const Spacer(),
-        value.when(
-          loading: () => const SizedBox(
-            width: 14,
-            height: 14,
-            child: CircularProgressIndicator(
-              strokeWidth: 1.5,
-              color: AppColors.accentGold,
-            ),
-          ),
-          error: (_, __) => const Text(
-            '-',
-            style: TextStyle(
-              fontFamily: 'IBMPlexMono',
-              fontSize: 12,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          data: (total) => Text(
-            'Rs ${fmt.format(total)}',
-            style: TextStyle(
-              fontFamily: 'Rajdhani',
-              fontWeight: FontWeight.w700,
-              fontSize: 18,
-              color: color,
-              letterSpacing: 0.2,
-            ),
-          ),
-        ),
+        value == null
+            ? const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 1.5,
+                  color: AppColors.accentGold,
+                ),
+              )
+            : Text(
+                'Rs ${fmt.format(value)}',
+                style: TextStyle(
+                  fontFamily: 'Rajdhani',
+                  fontWeight: FontWeight.w700,
+                  fontSize: 18,
+                  color: color,
+                  letterSpacing: 0.2,
+                ),
+              ),
       ],
     );
   }
