@@ -1092,42 +1092,47 @@ class _TransactionRow extends StatelessWidget {
                       color: AppColors.textPrimary,
                     ),
                   ),
-                  if (item.category != null && item.category!.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppColors.cardBorder,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        item.category!,
-                        style: const TextStyle(
-                          fontFamily: 'IBMPlexMono',
-                          fontSize: 9,
-                          color: AppColors.textSecondary,
+                  const SizedBox(height: 4),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text.rich(
+                        TextSpan(
+                          text: timeFmt.format(item.loggedAt),
+                          style: const TextStyle(
+                            fontFamily: 'IBMPlexMono',
+                            fontSize: 10,
+                            color: AppColors.textSecondary,
+                            letterSpacing: 0.5,
+                          ),
+                          children: [
+                            const TextSpan(text: ' | '),
+                            TextSpan(
+                              text: typeLabel,
+                              style: TextStyle(color: amountColor),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                  ],
-                  const SizedBox(height: 4),
-                  Text.rich(
-                    TextSpan(
-                      text: timeFmt.format(item.loggedAt),
-                      style: const TextStyle(
-                        fontFamily: 'IBMPlexMono',
-                        fontSize: 10,
-                        color: AppColors.textSecondary,
-                        letterSpacing: 0.5,
-                      ),
-                      children: [
-                        const TextSpan(text: ' | '),
-                        TextSpan(
-                          text: typeLabel,
-                          style: TextStyle(color: amountColor),
+                      if (item.category != null && item.category!.isNotEmpty) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.cardBorder,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            item.category!,
+                            style: const TextStyle(
+                              fontFamily: 'IBMPlexMono',
+                              fontSize: 9,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
                         ),
                       ],
-                    ),
+                    ],
                   ),
                 ],
               ),
