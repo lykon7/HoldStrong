@@ -1600,7 +1600,7 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
           ),
           const SizedBox(height: 6),
           DropdownButtonFormField<String>(
-            value: _fromFundUuid,
+            initialValue: _fromFundUuid,
             dropdownColor: AppColors.backgroundSurface,
             style: const TextStyle(
               fontFamily: 'Rajdhani',
@@ -1643,7 +1643,7 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
           ),
           const SizedBox(height: 6),
           DropdownButtonFormField<String>(
-            value: _toFundUuid,
+            initialValue: _toFundUuid,
             dropdownColor: AppColors.backgroundSurface,
             style: const TextStyle(
               fontFamily: 'Rajdhani',
@@ -1940,7 +1940,7 @@ class _EditTransferSheetState extends ConsumerState<_EditTransferSheet> {
           ),
           const SizedBox(height: 6),
           DropdownButtonFormField<String>(
-            value: _fromFundUuid,
+            initialValue: _fromFundUuid,
             dropdownColor: AppColors.backgroundSurface,
             style: const TextStyle(
               fontFamily: 'Rajdhani',
@@ -1983,7 +1983,7 @@ class _EditTransferSheetState extends ConsumerState<_EditTransferSheet> {
           ),
           const SizedBox(height: 6),
           DropdownButtonFormField<String>(
-            value: _toFundUuid,
+            initialValue: _toFundUuid,
             dropdownColor: AppColors.backgroundSurface,
             style: const TextStyle(
               fontFamily: 'Rajdhani',

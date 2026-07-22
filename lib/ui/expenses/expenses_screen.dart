@@ -765,7 +765,7 @@ class _AddExpenseSheetState extends ConsumerState<_AddExpenseSheet> {
                 const _SheetLabel('CATEGORY'),
                 const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
-                  value: _selectedCategory,
+                  initialValue: _selectedCategory,
                   decoration: const InputDecoration(
                     hintText: 'Select category (optional)',
                   ),
@@ -1130,7 +1130,7 @@ class _EditExpenseSheetState extends ConsumerState<_EditExpenseSheet> {
                 const _SheetLabel('CATEGORY'),
                 const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
-                  value: _selectedCategory,
+                  initialValue: _selectedCategory,
                   decoration: const InputDecoration(
                     hintText: 'Select category (optional)',
                   ),

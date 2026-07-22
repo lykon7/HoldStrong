@@ -815,7 +815,7 @@ class _LiabilityFormState extends State<_LiabilityForm> {
                     style: TextStyle(fontSize: 13)),
                 value: _isRecurring,
                 onChanged: (v) => setState(() => _isRecurring = v),
-                activeColor: AppColors.accentGold,
+                activeThumbColor: AppColors.accentGold,
               ),
 
             // Frequency
@@ -855,7 +855,7 @@ class _LiabilityFormState extends State<_LiabilityForm> {
               )
             else
               DropdownButtonFormField<String?>(
-                value: _selectedFundUuid,
+                initialValue: _selectedFundUuid,
                 decoration: const InputDecoration(
                   labelText: 'Account (optional)',
                   prefixIcon: Icon(Icons.account_balance_wallet_outlined,

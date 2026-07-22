@@ -283,7 +283,7 @@ class WorkoutScreen extends ConsumerWidget {
                   ? null
                   : () {
                       if (isWorkoutDay) {
-                        _promptForUntoggle(context, ref, entry!);
+                        _promptForUntoggle(context, ref, entry);
                       } else {
                         _promptForWeight(context, ref, date);
                       }

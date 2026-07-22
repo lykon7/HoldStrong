@@ -27,7 +27,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   bool _showSearch = false;
   final TextEditingController _searchCtrl = TextEditingController();
   String _searchQuery = '';
-  Set<String> _selectedCategories = {};
+  final Set<String> _selectedCategories = {};
 
   @override
   void initState() {
@@ -70,23 +70,43 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
         final amt = item.amount;
         
         if (date == today) {
-          if (item.isIncome) valDInc += amt; else valDExp += amt;
+          if (item.isIncome) {
+            valDInc += amt;
+          } else {
+            valDExp += amt;
+          }
         }
         if (!date.isBefore(weekStart) && !date.isAfter(weekEnd)) {
-          if (item.isIncome) valWInc += amt; else valWExp += amt;
+          if (item.isIncome) {
+            valWInc += amt;
+          } else {
+            valWExp += amt;
+          }
         }
         if (!date.isBefore(lastWeekStart) && !date.isAfter(lastWeekEnd)) {
-          if (item.isIncome) valLwInc += amt; else valLwExp += amt;
+          if (item.isIncome) {
+            valLwInc += amt;
+          } else {
+            valLwExp += amt;
+          }
         }
         if (date.year == now.year && date.month == now.month) {
-          if (item.isIncome) valMInc += amt; else valMExp += amt;
+          if (item.isIncome) {
+            valMInc += amt;
+          } else {
+            valMExp += amt;
+          }
         }
         
         final isLastMonth = (now.month == 1) 
             ? (date.year == now.year - 1 && date.month == 12)
             : (date.year == now.year && date.month == now.month - 1);
         if (isLastMonth) {
-          if (item.isIncome) valLmInc += amt; else valLmExp += amt;
+          if (item.isIncome) {
+            valLmInc += amt;
+          } else {
+            valLmExp += amt;
+          }
         }
       }
       dInc = valDInc; dExp = valDExp; wInc = valWInc; wExp = valWExp;
@@ -1451,7 +1471,7 @@ class _AddIncomeSheetState extends ConsumerState<_AddIncomeSheet> {
                 const _SheetLabel('CATEGORY'),
                 const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
-                  value: _selectedCategory,
+                  initialValue: _selectedCategory,
                   decoration: const InputDecoration(
                     hintText: 'Select category (optional)',
                   ),
@@ -1896,7 +1916,7 @@ class _EditIncomeSheetState extends ConsumerState<_EditIncomeSheet> {
                 const _SheetLabel('CATEGORY'),
                 const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
-                  value: _selectedCategory,
+                  initialValue: _selectedCategory,
                   decoration: const InputDecoration(
                     hintText: 'Select category (optional)',
                   ),
@@ -2264,7 +2284,7 @@ class _AddExpenseSheetState extends ConsumerState<_AddExpenseSheet> {
                 const _SheetLabel('CATEGORY'),
                 const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
-                  value: _selectedCategory,
+                  initialValue: _selectedCategory,
                   decoration: const InputDecoration(
                     hintText: 'Select category (optional)',
                   ),
@@ -2672,7 +2692,7 @@ class _EditExpenseSheetState extends ConsumerState<_EditExpenseSheet> {
                 const _SheetLabel('CATEGORY'),
                 const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
-                  value: _selectedCategory,
+                  initialValue: _selectedCategory,
                   decoration: const InputDecoration(
                     hintText: 'Select category (optional)',
                   ),

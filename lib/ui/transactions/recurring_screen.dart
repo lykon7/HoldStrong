@@ -487,7 +487,7 @@ class _EditRecurringSheetState extends ConsumerState<_EditRecurringSheet> {
                 const _SheetLabel('CATEGORY'),
                 const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
-                  value: _selectedCategory,
+                  initialValue: _selectedCategory,
                   decoration: const InputDecoration(
                     hintText: 'Select category (optional)',
                   ),
