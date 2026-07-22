@@ -48,7 +48,7 @@ class WorkoutScreen extends ConsumerWidget {
 
   Future<void> _promptForWeight(BuildContext context, WidgetRef ref, DateTime date) async {
     final ctrl = TextEditingController();
-    final weightStr = await showDialog<String>(
+    final result = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.backgroundElevated,
@@ -56,31 +56,43 @@ class WorkoutScreen extends ConsumerWidget {
           borderRadius: BorderRadius.circular(2),
           side: const BorderSide(color: AppColors.cardBorder),
         ),
-        title: const Text('LOG WEIGHT',
+        title: const Text('LOG WORKOUT',
             style: TextStyle(
                 fontFamily: 'Rajdhani',
                 fontWeight: FontWeight.w700,
                 fontSize: 18,
                 letterSpacing: 1,
                 color: AppColors.textPrimary)),
-        content: TextField(
-          controller: ctrl,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d.]'))],
-          style: const TextStyle(
-              fontFamily: 'IBMPlexMono',
-              fontSize: 14,
-              color: AppColors.textPrimary),
-          decoration: const InputDecoration(
-            hintText: 'Weight in kg...',
-            isDense: true,
-          ),
-          autofocus: true,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Enter your body weight (optional):', style: TextStyle(fontFamily: 'IBMPlexMono', fontSize: 12, color: AppColors.textSecondary)),
+            const SizedBox(height: 12),
+            TextField(
+              controller: ctrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d.]'))],
+              style: const TextStyle(
+                  fontFamily: 'IBMPlexMono',
+                  fontSize: 14,
+                  color: AppColors.textPrimary),
+              decoration: const InputDecoration(
+                hintText: 'Weight in kg...',
+                isDense: true,
+              ),
+              autofocus: true,
+            ),
+          ],
         ),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx),
               child: const Text('CANCEL',
+                  style: TextStyle(color: AppColors.textSecondary))),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, "SKIP"),
+              child: const Text('SKIP WEIGHT',
                   style: TextStyle(color: AppColors.textSecondary))),
           TextButton(
               onPressed: () => Navigator.pop(ctx, ctrl.text),
@@ -89,9 +101,13 @@ class WorkoutScreen extends ConsumerWidget {
         ],
       ),
     );
-    if (weightStr != null) {
-      final weight = double.tryParse(weightStr.trim());
-      ref.read(workoutControllerProvider.notifier).toggleWorkout(date, weight: weight);
+    if (result != null) {
+      if (result == "SKIP") {
+        ref.read(workoutControllerProvider.notifier).toggleWorkout(date, weight: null);
+      } else {
+        final weight = double.tryParse(result.trim());
+        ref.read(workoutControllerProvider.notifier).toggleWorkout(date, weight: weight);
+      }
     }
   }
 
