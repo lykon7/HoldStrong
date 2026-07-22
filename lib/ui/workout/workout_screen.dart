@@ -40,6 +40,8 @@ class WorkoutScreen extends ConsumerWidget {
             const SizedBox(height: 32),
             const _WeightGraphSection(),
             const SizedBox(height: 32),
+            const _WeightLogSection(),
+            const SizedBox(height: 32),
           ],
         ),
       ),
@@ -501,4 +503,110 @@ class _WeightLinePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _WeightLinePainter old) => true;
+}
+
+class _WeightLogSection extends ConsumerWidget {
+  const _WeightLogSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final history = ref.watch(allWeightHistoryProvider);
+
+    if (history.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text('WEIGHT LOG',
+            style: TextStyle(
+                fontFamily: 'IBMPlexMono',
+                fontSize: 10,
+                letterSpacing: 2,
+                color: AppColors.textSecondary)),
+        const SizedBox(height: 12),
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.backgroundElevated,
+            borderRadius: BorderRadius.circular(2),
+            border: Border.all(color: AppColors.cardBorder),
+          ),
+          child: ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: history.length,
+            separatorBuilder: (context, index) => const Divider(height: 1, color: AppColors.cardBorder),
+            itemBuilder: (context, index) {
+              final entry = history[index];
+              final prevEntry = (index + 1 < history.length) ? history[index + 1] : null;
+
+              double? diff;
+              if (prevEntry != null) {
+                diff = entry.weight! - prevEntry.weight!;
+              }
+
+              IconData? arrowIcon;
+              Color diffColor = AppColors.textSecondary;
+              String diffStr = '';
+
+              if (diff != null) {
+                if (diff < 0) {
+                  arrowIcon = Icons.arrow_downward;
+                  diffColor = Colors.green; // Loss is green
+                  diffStr = '${diff.abs().toStringAsFixed(1)} kg';
+                } else if (diff > 0) {
+                  arrowIcon = Icons.arrow_upward;
+                  diffColor = AppColors.destructive; // Gain is red
+                  diffStr = '${diff.toStringAsFixed(1)} kg';
+                } else {
+                  arrowIcon = Icons.horizontal_rule;
+                  diffStr = 'No change';
+                }
+              }
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  children: [
+                    Text(
+                      DateFormat('d MMM yyyy').format(entry.date),
+                      style: const TextStyle(
+                        fontFamily: 'IBMPlexMono',
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const Spacer(),
+                    if (arrowIcon != null) ...[
+                      Icon(arrowIcon, size: 14, color: diffColor),
+                      const SizedBox(width: 4),
+                      Text(
+                        diffStr,
+                        style: TextStyle(
+                          fontFamily: 'IBMPlexMono',
+                          fontSize: 12,
+                          color: diffColor,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                    ],
+                    Text(
+                      '${entry.weight!.toStringAsFixed(1)} kg',
+                      style: const TextStyle(
+                        fontFamily: 'Rajdhani',
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
 }

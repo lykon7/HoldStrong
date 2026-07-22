@@ -135,3 +135,16 @@ final weightHistoryProvider = Provider.family<List<WorkoutEntry>, int>((ref, mon
 
   return entries.where((e) => e.weight != null).toList();
 });
+
+// Provides all weight history sorted by date descending for the log
+final allWeightHistoryProvider = Provider<List<WorkoutEntry>>((ref) {
+  final isar = ref.watch(isarProvider);
+  ref.watch(workoutEntriesProvider);
+
+  final entries = isar.workoutEntrys
+      .where()
+      .sortByDateDesc()
+      .findAllSync();
+
+  return entries.where((e) => e.weight != null).toList();
+});
