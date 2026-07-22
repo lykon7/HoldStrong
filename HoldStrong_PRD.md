@@ -5,6 +5,8 @@
 **Date:** April 2026  
 **Status:** Draft
 
+> **Evolution Note:** This document represents the original vision of HoldStrong as a pure discipline-tracking app. Since its inception, the application has evolved into a comprehensive life-management dashboard (including extensive financial tracking, custom timers, and workout logs). While the core philosophy remains, the app's scope is now significantly broader than what is described below.
+
 ---
 
 ## 1. Overview

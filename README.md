@@ -2,7 +2,7 @@
 
 > **Note:** I built this application for myself and use it every day to get my shit together. I'm just sharing it here. Feel free to suggest features or improvements, but there are no guarantees that I will implement them.
 
-HoldStrong is a discipline tracking application built with Flutter. It is designed to help users track resisted cravings, measure their progress toward specific goals, and manage their personal finances through income, expenses, and fund tracking.
+HoldStrong is a personal command center built with Flutter. Originally designed as a discipline tracker, it has evolved into a comprehensive life-management dashboard. It helps you track finances, manage custom timers, log workouts, and keep your daily life organized—all in one fast, offline-first application.
 
 ## Screenshots
 
@@ -12,18 +12,16 @@ HoldStrong is a discipline tracking application built with Flutter. It is design
 
 ## Features
 
-- **Discipline Tracking**: Log every time you resist a craving. Track the money saved and calories avoided.
-- **Goal Management**: Set financial or fitness goals with target amounts. Visualize your progress and projected completion dates.
-- **Streak Tracking**: Build and maintain momentum by tracking consecutive days of resisting cravings.
-- **Expense Logging**: A built-in daily expenses section to log expenditures. View your spend grouped by day, along with daily, weekly, and monthly totals.
-- **Income Logging**: Log your daily income from various sources. View your income grouped by day, along with daily, weekly, and monthly totals.
-- **Funds Management**: Create custom fund accounts (e.g., Cash, Bank, Wallet) with opening balances. Link your income and expenses to specific accounts to automatically calculate their live balances.
-- **Hub**: A central command center for accessing secondary productivity and tracking features.
-- **Journaling**: Document your thoughts and daily reflections with auto-saving and swipe-to-delete functionality.
-- **Wishlist**: Track items you want to purchase along with their estimated costs, helping you direct your saved funds purposefully.
-- **Workout Tracker**: Build a visual gym habit by logging your daily workouts and monitoring your active streaks.
-- **To-Do List**: Manage daily tasks and deadlines, complete with overdue highlighting to stay on top of your responsibilities.
-- **Data Persistence**: Fast and local data storage powered by Isar Database.
+- **Financial Hub**: A robust transaction manager for logging income, expenses, and liabilities. Features custom categories, rich filtering, and detailed analysis reports to understand your spending habits.
+- **Funds Management**: Create custom fund accounts (e.g., Cash, Bank, Wallet) with opening balances and see live calculations based on your transactions.
+- **Workout & Weight Log**: Build a visual gym habit by logging your daily workouts, monitoring active streaks, and tracking weight history with trend indicators.
+- **Custom Timers**: Create and manage highly configurable custom timers (like Recalibration or Pomodoro sessions) right from your dashboard.
+- **Discipline Tracking (Resists)**: Log cravings you resist, tracking money saved and calories avoided towards specific financial or fitness goals.
+- **Central Hub**: A command center for secondary productivity tools, including:
+  - **Journaling**: Document your thoughts and daily reflections with auto-saving.
+  - **Wishlist**: Track items you want to purchase along with estimated costs.
+  - **To-Do List**: Manage daily tasks and deadlines with overdue highlighting.
+- **Data Persistence**: Lightning-fast, entirely offline local data storage powered by Isar Database, complete with backup and restore functionality.
 
 ## Technology Stack
 
