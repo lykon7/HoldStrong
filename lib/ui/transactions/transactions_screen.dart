@@ -1084,38 +1084,20 @@ class _TransactionRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    item.title,
-                    style: const TextStyle(
-                      fontFamily: 'IBMPlexMono',
-                      fontSize: 13,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 8,
+                    runSpacing: 4,
                     children: [
-                      Text.rich(
-                        TextSpan(
-                          text: timeFmt.format(item.loggedAt),
-                          style: const TextStyle(
-                            fontFamily: 'IBMPlexMono',
-                            fontSize: 10,
-                            color: AppColors.textSecondary,
-                            letterSpacing: 0.5,
-                          ),
-                          children: [
-                            const TextSpan(text: ' | '),
-                            TextSpan(
-                              text: typeLabel,
-                              style: TextStyle(color: amountColor),
-                            ),
-                          ],
+                      Text(
+                        item.title,
+                        style: const TextStyle(
+                          fontFamily: 'IBMPlexMono',
+                          fontSize: 13,
+                          color: AppColors.textPrimary,
                         ),
                       ),
-                      if (item.category != null && item.category!.isNotEmpty) ...[
-                        const SizedBox(width: 8),
+                      if (item.category != null && item.category!.isNotEmpty)
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
@@ -1131,8 +1113,26 @@ class _TransactionRow extends StatelessWidget {
                             ),
                           ),
                         ),
-                      ],
                     ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text.rich(
+                    TextSpan(
+                      text: timeFmt.format(item.loggedAt),
+                      style: const TextStyle(
+                        fontFamily: 'IBMPlexMono',
+                        fontSize: 10,
+                        color: AppColors.textSecondary,
+                        letterSpacing: 0.5,
+                      ),
+                      children: [
+                        const TextSpan(text: ' | '),
+                        TextSpan(
+                          text: typeLabel,
+                          style: TextStyle(color: amountColor),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
