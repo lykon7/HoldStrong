@@ -26,7 +26,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     // Reset filters on init
     Future.microtask(() {
       ref.read(analysisFilterProvider.notifier).setDateRangePreset(AnalysisDateRange.thisMonth);
@@ -85,6 +85,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen>
           unselectedLabelColor: AppColors.textSecondary,
           labelStyle: const TextStyle(fontFamily: 'Rajdhani', fontWeight: FontWeight.bold, fontSize: 16),
           tabs: const [
+            Tab(text: 'ALL'),
             Tab(text: 'EXPENSES'),
             Tab(text: 'INCOME'),
           ],
@@ -137,7 +138,21 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen>
                   child: AnimatedBuilder(
                     animation: _tabController,
                     builder: (context, _) {
-                      final isExpense = _tabController.index == 0;
+                      final isAll = _tabController.index == 0;
+                      final isExpense = _tabController.index == 1;
+                      
+                      if (isAll) {
+                        return Container(
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: AppColors.backgroundElevated.withOpacity(0.5),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          alignment: Alignment.center,
+                          child: const Text('All Categories', style: TextStyle(fontFamily: 'IBMPlexMono', fontSize: 12, color: AppColors.textSecondary)),
+                        );
+                      }
+                      
                       return Consumer(
                         builder: (context, ref, _) {
                           final expenseCategories = ref.watch(expenseCategoriesProvider);
@@ -285,6 +300,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen>
             child: TabBarView(
               controller: _tabController,
               children: [
+                _AllAnalysisView(),
                 _ExpenseAnalysisView(),
                 _IncomeAnalysisView(),
               ],
@@ -292,6 +308,45 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen>
           ),
         ],
       ),
+    );
+  }
+}
+
+class _AllAnalysisView extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final expenses = ref.watch(filteredExpensesProvider);
+    final income = ref.watch(filteredIncomeProvider);
+    final filterState = ref.watch(analysisFilterProvider);
+
+    final List<dynamic> allTransactions = [...expenses, ...income];
+    
+    allTransactions.sort((a, b) {
+       final dateA = a is ExpenseEntry ? a.loggedAt : (a as IncomeEntry).loggedAt;
+       final dateB = b is ExpenseEntry ? b.loggedAt : (b as IncomeEntry).loggedAt;
+       final amountA = a is ExpenseEntry ? a.amount : (a as IncomeEntry).amount;
+       final amountB = b is ExpenseEntry ? b.amount : (b as IncomeEntry).amount;
+       
+       switch (filterState.sortOption) {
+          case AnalysisSortOption.dateNewToOld:
+            return dateB.compareTo(dateA);
+          case AnalysisSortOption.dateOldToNew:
+            return dateA.compareTo(dateB);
+          case AnalysisSortOption.valueHighToLow:
+            return amountB.compareTo(amountA);
+          case AnalysisSortOption.valueLowToHigh:
+            return amountA.compareTo(amountB);
+       }
+    });
+
+    final totalExpense = expenses.fold<double>(0, (sum, item) => sum + item.amount);
+    final totalIncome = income.fold<double>(0, (sum, item) => sum + item.amount);
+
+    return _AnalysisContentView(
+      transactions: allTransactions,
+      totalExpense: totalExpense,
+      totalIncome: totalIncome,
+      isExpense: null,
     );
   }
 }
@@ -330,15 +385,19 @@ class _IncomeAnalysisView extends ConsumerWidget {
 
 class _AnalysisContentView extends StatelessWidget {
   final List<dynamic> transactions;
-  final Map<String, double> categoryTotals;
-  final double totalAmount;
-  final bool isExpense;
+  final Map<String, double>? categoryTotals;
+  final double? totalAmount;
+  final double? totalExpense;
+  final double? totalIncome;
+  final bool? isExpense;
 
   const _AnalysisContentView({
     required this.transactions,
-    required this.categoryTotals,
-    required this.totalAmount,
-    required this.isExpense,
+    this.categoryTotals,
+    this.totalAmount,
+    this.totalExpense,
+    this.totalIncome,
+    this.isExpense,
   });
 
   @override
@@ -349,7 +408,6 @@ class _AnalysisContentView extends StatelessWidget {
       );
     }
 
-    final color = isExpense ? _kExpenseRed : _kIncomeGreen;
     final fmt = NumberFormat('#,##0.00', 'en_US');
     final dateFmt = DateFormat('dd MMM yyyy');
 
@@ -357,36 +415,86 @@ class _AnalysisContentView extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       children: [
         // Total Summary Card
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: AppColors.backgroundElevated,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: color.withOpacity(0.3)),
+        if (isExpense != null)
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.backgroundElevated,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: (isExpense! ? _kExpenseRed : _kIncomeGreen).withOpacity(0.3)),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  isExpense! ? 'TOTAL EXPENSES' : 'TOTAL INCOME',
+                  style: const TextStyle(fontFamily: 'IBMPlexMono', fontSize: 12, letterSpacing: 2, color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Rs ${fmt.format(totalAmount)}',
+                  style: TextStyle(fontFamily: 'Rajdhani', fontWeight: FontWeight.bold, fontSize: 32, color: isExpense! ? _kExpenseRed : _kIncomeGreen),
+                ),
+              ],
+            ),
+          )
+        else
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.backgroundElevated,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.cardBorder),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('INCOME', style: TextStyle(fontFamily: 'IBMPlexMono', fontSize: 12, letterSpacing: 2, color: AppColors.textSecondary)),
+                          const SizedBox(height: 4),
+                          Text('Rs ${fmt.format(totalIncome)}', style: const TextStyle(fontFamily: 'Rajdhani', fontWeight: FontWeight.bold, fontSize: 24, color: _kIncomeGreen)),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          const Text('EXPENSES', style: TextStyle(fontFamily: 'IBMPlexMono', fontSize: 12, letterSpacing: 2, color: AppColors.textSecondary)),
+                          const SizedBox(height: 4),
+                          Text('Rs ${fmt.format(totalExpense)}', style: const TextStyle(fontFamily: 'Rajdhani', fontWeight: FontWeight.bold, fontSize: 24, color: _kExpenseRed)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Divider(height: 1),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('NET BALANCE', style: TextStyle(fontFamily: 'IBMPlexMono', fontSize: 12, letterSpacing: 2, color: AppColors.textSecondary)),
+                    Text('Rs ${fmt.format(totalIncome! - totalExpense!)}', style: TextStyle(fontFamily: 'Rajdhani', fontWeight: FontWeight.bold, fontSize: 20, color: (totalIncome! - totalExpense!) >= 0 ? _kIncomeGreen : _kExpenseRed)),
+                  ],
+                ),
+              ],
+            ),
           ),
-          child: Column(
-            children: [
-              Text(
-                isExpense ? 'TOTAL EXPENSES' : 'TOTAL INCOME',
-                style: const TextStyle(fontFamily: 'IBMPlexMono', fontSize: 12, letterSpacing: 2, color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Rs ${fmt.format(totalAmount)}',
-                style: TextStyle(fontFamily: 'Rajdhani', fontWeight: FontWeight.bold, fontSize: 32, color: color),
-              ),
-            ],
-          ),
-        ),
         const SizedBox(height: 24),
         
         // Horizontal Bar Chart
-        if (categoryTotals.isNotEmpty)
+        if (categoryTotals != null && categoryTotals!.isNotEmpty)
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: (() {
-              final entries = categoryTotals.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+              final entries = categoryTotals!.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
               final maxVal = entries.isEmpty ? 1.0 : entries.first.value;
+              final color = isExpense! ? _kExpenseRed : _kIncomeGreen;
               return entries.map((entry) {
                 final widthFactor = maxVal == 0 ? 0.0 : entry.value / maxVal;
                 return Padding(
@@ -432,7 +540,7 @@ class _AnalysisContentView extends StatelessWidget {
               }).toList();
             })(),
           ),
-        const SizedBox(height: 24),
+        if (categoryTotals != null && categoryTotals!.isNotEmpty) const SizedBox(height: 24),
 
         // Transactions List
         const Text(
@@ -446,6 +554,7 @@ class _AnalysisContentView extends StatelessWidget {
           final cat = isE ? t.category : (t as IncomeEntry).category;
           final amount = isE ? t.amount : (t as IncomeEntry).amount;
           final date = isE ? t.loggedAt : (t as IncomeEntry).loggedAt;
+          final itemColor = isE ? _kExpenseRed : _kIncomeGreen;
 
           return Container(
             margin: const EdgeInsets.only(bottom: 8),
@@ -491,8 +600,8 @@ class _AnalysisContentView extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  'Rs ${fmt.format(amount)}',
-                  style: TextStyle(fontFamily: 'IBMPlexMono', fontWeight: FontWeight.w600, fontSize: 14, color: color),
+                  '${isExpense == null ? (isE ? '-' : '+') : ''}Rs ${fmt.format(amount)}',
+                  style: TextStyle(fontFamily: 'IBMPlexMono', fontWeight: FontWeight.w600, fontSize: 14, color: itemColor),
                 ),
               ],
             ),
