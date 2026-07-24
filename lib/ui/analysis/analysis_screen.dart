@@ -141,26 +141,24 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen>
                       final isAll = _tabController.index == 0;
                       final isExpense = _tabController.index == 1;
                       
-                      if (isAll) {
-                        return Container(
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: AppColors.backgroundElevated.withOpacity(0.5),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          alignment: Alignment.center,
-                          child: const Text('All Categories', style: TextStyle(fontFamily: 'IBMPlexMono', fontSize: 12, color: AppColors.textSecondary)),
-                        );
-                      }
-                      
                       return Consumer(
                         builder: (context, ref, _) {
-                          final expenseCategories = ref.watch(expenseCategoriesProvider);
-                          final incomeCategories = ref.watch(incomeCategoriesProvider);
+                          final expenseCategoriesList = ref.watch(expenseCategoriesProvider);
+                          final incomeCategoriesList = ref.watch(incomeCategoriesProvider);
                           
-                          final categories = isExpense ? expenseCategories : incomeCategories;
-                          final selectedSet = isExpense ? filterState.expenseCategories : filterState.incomeCategories;
-                          final label = selectedSet.isEmpty ? 'All' : '${selectedSet.length} selected';
+                          final categories = isAll
+                              ? {...expenseCategoriesList, ...incomeCategoriesList}.toList()
+                              : isExpense
+                                  ? expenseCategoriesList
+                                  : incomeCategoriesList;
+                                  
+                          final selectedSet = isAll
+                              ? {...filterState.expenseCategories, ...filterState.incomeCategories}.toSet()
+                              : isExpense
+                                  ? filterState.expenseCategories
+                                  : filterState.incomeCategories;
+                                  
+                          final label = selectedSet.isEmpty ? (isAll ? 'All Categories' : 'All') : '${selectedSet.length} selected';
 
                           return InkWell(
                             onTap: () {
@@ -171,7 +169,11 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen>
                                   return Consumer(
                                     builder: (context, ref, _) {
                                       final currentState = ref.watch(analysisFilterProvider);
-                                      final currentSet = isExpense ? currentState.expenseCategories : currentState.incomeCategories;
+                                      final currentSet = isAll
+                                          ? {...currentState.expenseCategories, ...currentState.incomeCategories}.toSet()
+                                          : isExpense
+                                              ? currentState.expenseCategories
+                                              : currentState.incomeCategories;
                                       return Column(
                                         children: [
                                           Padding(
@@ -182,7 +184,10 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen>
                                                 const Text('Select Categories', style: TextStyle(fontFamily: 'Rajdhani', fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
                                                 TextButton(
                                                   onPressed: () {
-                                                    if (isExpense) {
+                                                    if (isAll) {
+                                                      notifier.clearExpenseCategories();
+                                                      notifier.clearIncomeCategories();
+                                                    } else if (isExpense) {
                                                       notifier.clearExpenseCategories();
                                                     } else {
                                                       notifier.clearIncomeCategories();
@@ -203,7 +208,16 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen>
                                                   activeColor: AppColors.accentGold,
                                                   checkColor: Colors.black,
                                                   onChanged: (val) {
-                                                    if (isExpense) {
+                                                    if (isAll) {
+                                                      final isSelected = currentSet.contains(c);
+                                                      if (isSelected) {
+                                                        if (currentState.expenseCategories.contains(c)) notifier.toggleExpenseCategory(c);
+                                                        if (currentState.incomeCategories.contains(c)) notifier.toggleIncomeCategory(c);
+                                                      } else {
+                                                        if (!currentState.expenseCategories.contains(c)) notifier.toggleExpenseCategory(c);
+                                                        if (!currentState.incomeCategories.contains(c)) notifier.toggleIncomeCategory(c);
+                                                      }
+                                                    } else if (isExpense) {
                                                       notifier.toggleExpenseCategory(c);
                                                     } else {
                                                       notifier.toggleIncomeCategory(c);
@@ -318,6 +332,17 @@ class _AllAnalysisView extends ConsumerWidget {
     final expenses = ref.watch(filteredExpensesProvider);
     final income = ref.watch(filteredIncomeProvider);
     final filterState = ref.watch(analysisFilterProvider);
+    
+    final expenseCatTotals = ref.watch(expenseCategoryTotalsProvider);
+    final incomeCatTotals = ref.watch(incomeCategoryTotalsProvider);
+    
+    final combinedCatTotals = <String, double>{};
+    for (final entry in expenseCatTotals.entries) {
+      combinedCatTotals[entry.key] = (combinedCatTotals[entry.key] ?? 0) + entry.value;
+    }
+    for (final entry in incomeCatTotals.entries) {
+      combinedCatTotals[entry.key] = (combinedCatTotals[entry.key] ?? 0) + entry.value;
+    }
 
     final List<dynamic> allTransactions = [...expenses, ...income];
     
@@ -344,6 +369,7 @@ class _AllAnalysisView extends ConsumerWidget {
 
     return _AnalysisContentView(
       transactions: allTransactions,
+      categoryTotals: combinedCatTotals,
       totalExpense: totalExpense,
       totalIncome: totalIncome,
       isExpense: null,
@@ -494,7 +520,7 @@ class _AnalysisContentView extends StatelessWidget {
             children: (() {
               final entries = categoryTotals!.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
               final maxVal = entries.isEmpty ? 1.0 : entries.first.value;
-              final color = isExpense! ? _kExpenseRed : _kIncomeGreen;
+              final color = isExpense == null ? AppColors.accentGold : (isExpense! ? _kExpenseRed : _kIncomeGreen);
               return entries.map((entry) {
                 final widthFactor = maxVal == 0 ? 0.0 : entry.value / maxVal;
                 return Padding(
