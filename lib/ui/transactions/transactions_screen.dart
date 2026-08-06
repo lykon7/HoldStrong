@@ -400,7 +400,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                       value: isSelected,
                       activeColor: AppColors.accentGold,
                       checkColor: AppColors.backgroundPrimary,
-                      side: const BorderSide(color: AppColors.cardBorder),
+                      side: const BorderSide(color: AppColors.textSecondary),
                       dense: true,
                       controlAffinity: ListTileControlAffinity.leading,
                       contentPadding: EdgeInsets.zero,
