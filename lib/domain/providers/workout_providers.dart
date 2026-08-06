@@ -5,13 +5,9 @@ import 'goal_providers.dart'; // To access isarProvider
 
 final workoutEntriesProvider = StreamProvider<List<WorkoutEntry>>((ref) {
   final isar = ref.watch(isarProvider);
-  final now = DateTime.now();
-  final firstDayOfMonth = DateTime(now.year, now.month, 1);
-  final lastDayOfMonth = DateTime(now.year, now.month + 1, 0);
 
   return isar.workoutEntrys
       .where()
-      .dateBetween(firstDayOfMonth, lastDayOfMonth)
       .watch(fireImmediately: true);
 });
 

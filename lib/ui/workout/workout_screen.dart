@@ -30,10 +30,12 @@ class WorkoutScreen extends ConsumerWidget {
               error: (err, _) => Text('Error loading stats: $err'),
             ),
             const SizedBox(height: 32),
-            _buildMonthHeader(),
-            const SizedBox(height: 16),
             entriesAsync.when(
-              data: (entries) => _buildCalendarGrid(context, ref, entries),
+              data: (entries) => _SwipableCalendar(
+                entries: entries,
+                onAddWorkout: (date) => _promptForWeight(context, ref, date),
+                onRemoveWorkout: (entry) => _promptForUntoggle(context, ref, entry),
+              ),
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (err, _) => Text('Error loading calendar: $err'),
             ),
@@ -208,34 +210,87 @@ class WorkoutScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildMonthHeader() {
-    final now = DateTime.now();
-    return Text(
-      DateFormat('MMMM yyyy').format(now),
-      textAlign: TextAlign.center,
-      style: const TextStyle(
-        fontSize: 24,
-        fontWeight: FontWeight.bold,
-        letterSpacing: 1.2,
+}
+
+class _SwipableCalendar extends StatefulWidget {
+  final List<WorkoutEntry> entries;
+  final Function(DateTime) onAddWorkout;
+  final Function(WorkoutEntry) onRemoveWorkout;
+
+  const _SwipableCalendar({
+    required this.entries,
+    required this.onAddWorkout,
+    required this.onRemoveWorkout,
+  });
+
+  @override
+  State<_SwipableCalendar> createState() => _SwipableCalendarState();
+}
+
+class _SwipableCalendarState extends State<_SwipableCalendar> {
+  late final PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: 0);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final availableWidth = screenWidth - 32;
+    final cellWidth = (availableWidth - (6 * 8.0)) / 7;
+    final gridHeight = (cellWidth * 6) + (5 * 8.0);
+    final totalHeight = gridHeight + 90; // Header(30) + spacing(16) + DayRow(20) + spacing(8) + safe padding(16)
+
+    return SizedBox(
+      height: totalHeight,
+      child: PageView.builder(
+        controller: _pageController,
+        reverse: true, // index 0 is on the right, swiping right goes to older months
+        itemBuilder: (context, index) {
+          final now = DateTime.now();
+          var year = now.year;
+          var month = now.month - index;
+          while (month <= 0) {
+            month += 12;
+            year--;
+          }
+          final targetMonth = DateTime(year, month, 1);
+          return _buildMonthPage(context, targetMonth);
+        },
       ),
     );
   }
 
-  Widget _buildCalendarGrid(BuildContext context, WidgetRef ref, List<WorkoutEntry> entries) {
+  Widget _buildMonthPage(BuildContext context, DateTime monthDate) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final firstDay = DateTime(now.year, now.month, 1);
-    final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
+    final daysInMonth = DateTime(monthDate.year, monthDate.month + 1, 0).day;
+    final firstWeekday = monthDate.weekday;
+    final emptyCells = firstWeekday - 1;
 
-    // DateTime.weekday returns 1 for Monday, 7 for Sunday.
-    // We want Monday = 0, Sunday = 6 for our grid padding if Monday is start.
-    final firstWeekday = firstDay.weekday; 
-    final emptyCells = firstWeekday - 1; // Start on Monday
-
-    final entryMap = {for (var e in entries) e.date: e};
+    final entryMap = {for (var e in widget.entries) e.date: e};
 
     return Column(
       children: [
+        Text(
+          DateFormat('MMMM yyyy').format(monthDate),
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.2,
+          ),
+        ),
+        const SizedBox(height: 16),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: const [
@@ -263,7 +318,7 @@ class WorkoutScreen extends ConsumerWidget {
               return const SizedBox.shrink();
             }
             final day = index - emptyCells + 1;
-            final date = DateTime(now.year, now.month, day);
+            final date = DateTime(monthDate.year, monthDate.month, day);
             final isFuture = date.isAfter(today);
             final entry = entryMap[date];
             final isWorkoutDay = entry != null;
@@ -283,9 +338,9 @@ class WorkoutScreen extends ConsumerWidget {
                   ? null
                   : () {
                       if (isWorkoutDay) {
-                        _promptForUntoggle(context, ref, entry);
+                        widget.onRemoveWorkout(entry);
                       } else {
-                        _promptForWeight(context, ref, date);
+                        widget.onAddWorkout(date);
                       }
                     },
               borderRadius: BorderRadius.circular(8),
@@ -311,6 +366,7 @@ class WorkoutScreen extends ConsumerWidget {
     );
   }
 }
+
 
 class _WeightGraphSection extends ConsumerStatefulWidget {
   const _WeightGraphSection();
