@@ -377,6 +377,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     final incomeCats = ref.read(incomeCategoriesProvider);
     final expenseCats = ref.read(expenseCategoriesProvider);
     final allCats = <String>{...incomeCats, ...expenseCats, 'Uncategorized'}.toList()..sort();
+    final scrollController = ScrollController();
 
     showDialog(
       context: context,
@@ -390,8 +391,12 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
               content: SizedBox(
                 width: double.maxFinite,
                 height: 300,
-                child: ListView.builder(
-                  itemCount: allCats.length,
+                child: Scrollbar(
+                  controller: scrollController,
+                  thumbVisibility: true,
+                  child: ListView.builder(
+                    controller: scrollController,
+                    itemCount: allCats.length,
                   itemBuilder: (context, index) {
                     final cat = allCats[index];
                     final isSelected = _selectedCategories.contains(cat);
@@ -418,7 +423,8 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                   },
                 ),
               ),
-              actions: [
+            ),
+            actions: [
                 TextButton(
                   onPressed: () {
                     setStateDialog(() {

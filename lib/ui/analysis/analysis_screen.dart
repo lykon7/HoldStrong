@@ -22,6 +22,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _searchCtrl = TextEditingController();
+  final ScrollController _categoryFilterScrollCtrl = ScrollController();
 
   @override
   void initState() {
@@ -37,6 +38,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen>
   void dispose() {
     _tabController.dispose();
     _searchCtrl.dispose();
+    _categoryFilterScrollCtrl.dispose();
     super.dispose();
   }
 
@@ -200,19 +202,23 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen>
                                           ),
                                           const Divider(height: 1),
                                           Expanded(
-                                            child: ListView(
-                                              children: ['Uncategorized', ...categories].map((c) {
-                                                return CheckboxListTile(
-                                                  title: Text(c, style: const TextStyle(fontFamily: 'IBMPlexMono', fontSize: 13, color: AppColors.textPrimary)),
-                                                  value: currentSet.contains(c),
-                                                  activeColor: AppColors.accentGold,
-                                                  checkColor: Colors.black,
-                                                  onChanged: (val) {
-                                                    if (isAll) {
-                                                      final isSelected = currentSet.contains(c);
-                                                      if (isSelected) {
-                                                        if (currentState.expenseCategories.contains(c)) notifier.toggleExpenseCategory(c);
-                                                        if (currentState.incomeCategories.contains(c)) notifier.toggleIncomeCategory(c);
+                                            child: Scrollbar(
+                                              controller: _categoryFilterScrollCtrl,
+                                              thumbVisibility: true,
+                                              child: ListView(
+                                                controller: _categoryFilterScrollCtrl,
+                                                children: ['Uncategorized', ...categories].map((c) {
+                                                  return CheckboxListTile(
+                                                    title: Text(c, style: const TextStyle(fontFamily: 'IBMPlexMono', fontSize: 13, color: AppColors.textPrimary)),
+                                                        value: currentSet.contains(c),
+                                                        activeColor: AppColors.accentGold,
+                                                        checkColor: Colors.black,
+                                                        onChanged: (val) {
+                                                          if (isAll) {
+                                                            final isSelected = currentSet.contains(c);
+                                                            if (isSelected) {
+                                                              if (currentState.expenseCategories.contains(c)) notifier.toggleExpenseCategory(c);
+                                                              if (currentState.incomeCategories.contains(c)) notifier.toggleIncomeCategory(c);
                                                       } else {
                                                         if (!currentState.expenseCategories.contains(c)) notifier.toggleExpenseCategory(c);
                                                         if (!currentState.incomeCategories.contains(c)) notifier.toggleIncomeCategory(c);
@@ -226,6 +232,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen>
                                                 );
                                               }).toList(),
                                             ),
+                                          ),
                                           ),
                                         ],
                                       );
