@@ -52,25 +52,9 @@ class HomeScreen extends ConsumerWidget {
                 const TotalCashCard(),
                 const SizedBox(height: 16),
                 ...ref.watch(customTimersProvider).map((t) => CustomTimerCard(timer: t)),
+                // Goals are optional: no placeholder when none is set.
                 goal == null
-                    ? Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: AppColors.backgroundSurface,
-                          borderRadius: BorderRadius.circular(2),
-                          border: Border.all(color: AppColors.cardBorder),
-                        ),
-                        alignment: Alignment.center,
-                        child: const Text(
-                          'NO ACTIVE GOAL.\nGO TO GOALS.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontFamily: 'IBMPlexMono',
-                            color: AppColors.textSecondary,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                      )
+                    ? const SizedBox.shrink()
                     : GoalProgressCard(
                         goal: goal,
                         totalSaved: totalSaved.value ?? 0.0,

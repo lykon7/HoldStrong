@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../domain/models/celebration_data.dart';
-import '../domain/providers/goal_providers.dart';
 import '../ui/home/home_screen.dart';
 import '../ui/log/log_screen.dart';
 import '../ui/celebration/celebration_screen.dart';
@@ -22,21 +21,8 @@ import '../ui/liabilities/liabilities_screen.dart';
 import '../ui/analysis/analysis_screen.dart';
 
 final goRouterProvider = Provider<GoRouter>((ref) {
-  final activeGoalNotifier = ref.watch(activeGoalProvider);
-
   return GoRouter(
     initialLocation: '/',
-    redirect: (context, state) {
-      final isAtGoalNew = state.matchedLocation == '/goals/new';
-      return activeGoalNotifier.when(
-        data: (goal) {
-          if (goal == null && !isAtGoalNew) return '/goals/new';
-          return null;
-        },
-        loading: () => null,
-        error: (_, __) => null,
-      );
-    },
     routes: [
       ShellRoute(
         builder: (context, state, child) => _MainShell(child: child),
