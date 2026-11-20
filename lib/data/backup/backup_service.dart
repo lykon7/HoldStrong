@@ -54,42 +54,7 @@ class BackupService {
 
   Future<BackupResult> export() async {
     try {
-      final goals = await _isar.goals.where().findAll();
-      final resists = await _isar.resistEntrys.where().findAll();
-      final labels = await _isar.cravingLabels.where().findAll();
-      final incomes = await _isar.incomeEntrys.where().findAll();
-      final expenses = await _isar.expenseEntrys.where().findAll();
-      final funds = await _isar.fundAccounts.where().findAll();
-      final recurring = await _isar.recurringTransactions.where().findAll();
-      final journals = await _isar.journalEntrys.where().findAll();
-      final wishlist = await _isar.wishlistItems.where().findAll();
-      final liabilities = await _isar.liabilityItems.where().findAll();
-      final transfers = await _isar.accountTransfers.where().findAll();
-      final todos = await _isar.todoItems.where().findAll();
-      final workouts = await _isar.workoutEntrys.where().findAll();
-
-      final payload = <String, dynamic>{
-        'version': _kBackupVersion,
-        'exportedAt': DateTime.now().toUtc().toIso8601String(),
-        'goals': goals.map((e) => e.toBackupJson()).toList(),
-        'resistEntries': resists.map((e) => e.toBackupJson()).toList(),
-        'cravingLabels': labels.map((e) => e.toBackupJson()).toList(),
-        'incomeEntries': incomes.map((e) => e.toBackupJson()).toList(),
-        'expenseEntries': expenses.map((e) => e.toBackupJson()).toList(),
-        'fundAccounts': funds.map((e) => e.toBackupJson()).toList(),
-        'recurringTransactions':
-            recurring.map((e) => e.toBackupJson()).toList(),
-        'journalEntries': journals.map((e) => e.toBackupJson()).toList(),
-        'wishlist': wishlist.map((e) => e.toBackupJson()).toList(),
-        'liabilities': liabilities.map((e) => e.toBackupJson()).toList(),
-        'accountTransfers': transfers.map((e) => e.toBackupJson()).toList(),
-        'todos': todos.map((e) => e.toBackupJson()).toList(),
-        'workouts': workouts.map((e) => e.toBackupJson()).toList(),
-        'incomeCategories': _prefs.getStringList('configured_income_categories'),
-        'expenseCategories': _prefs.getStringList('configured_expense_categories'),
-      };
-
-      final jsonStr = const JsonEncoder.withIndent('  ').convert(payload);
+      final jsonStr = await buildBackupJson();
       final dir = await getTemporaryDirectory();
       final now = DateTime.now();
       final stamp =
@@ -101,6 +66,102 @@ class BackupService {
     } catch (e) {
       return BackupResult.failure(e.toString());
     }
+  }
+
+  /// Full backup as a JSON string (same format as the manual `.hsbackup`).
+  Future<String> buildBackupJson() async {
+    final goals = await _isar.goals.where().findAll();
+    final resists = await _isar.resistEntrys.where().findAll();
+    final labels = await _isar.cravingLabels.where().findAll();
+    final incomes = await _isar.incomeEntrys.where().findAll();
+    final expenses = await _isar.expenseEntrys.where().findAll();
+    final funds = await _isar.fundAccounts.where().findAll();
+    final recurring = await _isar.recurringTransactions.where().findAll();
+    final journals = await _isar.journalEntrys.where().findAll();
+    final wishlist = await _isar.wishlistItems.where().findAll();
+    final liabilities = await _isar.liabilityItems.where().findAll();
+    final transfers = await _isar.accountTransfers.where().findAll();
+    final todos = await _isar.todoItems.where().findAll();
+    final workouts = await _isar.workoutEntrys.where().findAll();
+
+    final payload = <String, dynamic>{
+      'version': _kBackupVersion,
+      'exportedAt': DateTime.now().toUtc().toIso8601String(),
+      'goals': goals.map((e) => e.toBackupJson()).toList(),
+      'resistEntries': resists.map((e) => e.toBackupJson()).toList(),
+      'cravingLabels': labels.map((e) => e.toBackupJson()).toList(),
+      'incomeEntries': incomes.map((e) => e.toBackupJson()).toList(),
+      'expenseEntries': expenses.map((e) => e.toBackupJson()).toList(),
+      'fundAccounts': funds.map((e) => e.toBackupJson()).toList(),
+      'recurringTransactions': recurring.map((e) => e.toBackupJson()).toList(),
+      'journalEntries': journals.map((e) => e.toBackupJson()).toList(),
+      'wishlist': wishlist.map((e) => e.toBackupJson()).toList(),
+      'liabilities': liabilities.map((e) => e.toBackupJson()).toList(),
+      'accountTransfers': transfers.map((e) => e.toBackupJson()).toList(),
+      'todos': todos.map((e) => e.toBackupJson()).toList(),
+      'workouts': workouts.map((e) => e.toBackupJson()).toList(),
+      'incomeCategories': _prefs.getStringList('configured_income_categories'),
+      'expenseCategories':
+          _prefs.getStringList('configured_expense_categories'),
+    };
+
+    return const JsonEncoder.withIndent('  ').convert(payload);
+  }
+
+  /// Income, expenses and account transfers as one CSV, newest first.
+  /// Starts with a UTF-8 BOM so Excel reads non-ASCII text correctly.
+  Future<String> buildTransactionsCsv() async {
+    final incomes = await _isar.incomeEntrys.where().findAll();
+    final expenses = await _isar.expenseEntrys.where().findAll();
+    final transfers = await _isar.accountTransfers.where().findAll();
+    final funds = await _isar.fundAccounts.where().findAll();
+    final fundNames = {for (final f in funds) f.uuid: f.name};
+    String fund(String? uuid) => fundNames[uuid] ?? '';
+
+    final rows = <({DateTime at, List<Object?> cells})>[
+      for (final e in incomes)
+        (
+          at: e.loggedAt,
+          cells: [
+            'income', e.loggedAt.toIso8601String(), e.amount, e.amount,
+            e.category, e.source, fund(e.fundUuid), e.uuid,
+          ],
+        ),
+      for (final e in expenses)
+        (
+          at: e.loggedAt,
+          cells: [
+            'expense', e.loggedAt.toIso8601String(), e.amount, -e.amount,
+            e.category, e.purpose, fund(e.fundUuid), e.uuid,
+          ],
+        ),
+      for (final t in transfers)
+        (
+          at: t.transferAt,
+          cells: [
+            'transfer', t.transferAt.toIso8601String(), t.amount, 0,
+            null, t.note, '${fund(t.fromFundUuid)} -> ${fund(t.toFundUuid)}',
+            t.uuid,
+          ],
+        ),
+    ]..sort((a, b) => b.at.compareTo(a.at));
+
+    final buf = StringBuffer('\uFEFF')
+      ..writeln(
+          'type,date,amount,signed_amount,category,description,account,uuid');
+    for (final r in rows) {
+      buf.writeln(r.cells.map(_csvCell).join(','));
+    }
+    return buf.toString();
+  }
+
+  static String _csvCell(Object? v) {
+    if (v == null) return '';
+    final s = v.toString();
+    if (s.contains(',') || s.contains('"') || s.contains('\n') || s.contains('\r')) {
+      return '"${s.replaceAll('"', '""')}"';
+    }
+    return s;
   }
 
   // ─── Import (merge-by-UUID) ──────────────────────────────────────────────────

@@ -13,6 +13,7 @@ import 'package:uuid/uuid.dart';
 import '../../data/models/fund_account.dart';
 import '../../domain/providers/expense_providers.dart';
 import '../../domain/providers/fund_providers.dart';
+import 'widgets/cloud_backup_section.dart';
 import 'widgets/custom_timers_config.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -473,6 +474,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               color: AppColors.textSecondary,
             ),
           ),
+
+          const SizedBox(height: 24),
+          _SectionHeader('CLOUD BACKUP'),
+          const SizedBox(height: 8),
+          const CloudBackupSection(),
 
           const SizedBox(height: 32),
 
