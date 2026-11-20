@@ -94,11 +94,13 @@ class _CloudBackupSectionState extends ConsumerState<CloudBackupSection> {
   @override
   Widget build(BuildContext context) {
     if (!CloudBackupConfig.isConfigured) {
-      return const _Tile(
+      return _Tile(
         icon: Icons.cloud_off_outlined,
         label: 'GOOGLE DRIVE BACKUP',
-        sublabel: 'Not set up — add the Google web client ID in '
-            'lib/data/cloud/cloud_backup_config.dart',
+        sublabel: 'Not set up — tap for details',
+        onTap: () => _snack(
+            'Add your Google web client ID to webClientId in '
+            'lib/data/cloud/cloud_backup_config.dart, then rebuild the app.'),
       );
     }
 

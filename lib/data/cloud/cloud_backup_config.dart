@@ -10,7 +10,8 @@
 class CloudBackupConfig {
   CloudBackupConfig._();
 
-  static const String webClientId = '';
+  static const String webClientId =
+      '692837421154-ho5tloptl26787llmencjpoci99k659f.apps.googleusercontent.com';
 
   static bool get isConfigured => webClientId.isNotEmpty;
 
