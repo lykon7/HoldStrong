@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -20,7 +21,11 @@ import '../models/todo_item.dart';
 import '../models/workout_entry.dart';
 import 'backup_extensions.dart';
 
-const _kBackupVersion = 2;
+const _kBackupVersion = 3;
+
+/// Device-specific SharedPreferences that must never travel in a backup
+/// (Google account, schedule state, last-run status).
+const _kExcludedPrefPrefixes = ['cloud_backup_'];
 
 class BackupResult {
   const BackupResult.success(this.file) : error = null;
@@ -103,9 +108,67 @@ class BackupService {
       'incomeCategories': _prefs.getStringList('configured_income_categories'),
       'expenseCategories':
           _prefs.getStringList('configured_expense_categories'),
+      // Every other app setting (income sources, expense accounts, custom
+      // timers, …). Generic so new settings are covered automatically.
+      'preferences': exportPreferences(),
     };
 
     return const JsonEncoder.withIndent('  ').convert(payload);
+  }
+
+  @visibleForTesting
+  Map<String, dynamic> exportPreferences() {
+    final out = <String, dynamic>{};
+    final keys = _prefs.getKeys().toList()..sort();
+    for (final key in keys) {
+      if (_kExcludedPrefPrefixes.any(key.startsWith)) continue;
+      final v = _prefs.get(key);
+      if (v is bool) {
+        out[key] = {'type': 'bool', 'value': v};
+      } else if (v is int) {
+        out[key] = {'type': 'int', 'value': v};
+      } else if (v is double) {
+        out[key] = {'type': 'double', 'value': v};
+      } else if (v is String) {
+        out[key] = {'type': 'string', 'value': v};
+      } else if (v is List) {
+        out[key] = {'type': 'stringList', 'value': v.map((e) => '$e').toList()};
+      }
+    }
+    return out;
+  }
+
+  /// Restores settings that don't exist on this device yet. Existing values
+  /// are never overwritten, matching how records are merged.
+  @visibleForTesting
+  Future<int> importPreferences(Map<String, dynamic> prefs) async {
+    var restored = 0;
+    for (final entry in prefs.entries) {
+      final key = entry.key;
+      if (_kExcludedPrefPrefixes.any(key.startsWith)) continue;
+      if (_prefs.containsKey(key)) continue;
+      final spec = entry.value;
+      if (spec is! Map) continue;
+      final value = spec['value'];
+      switch (spec['type']) {
+        case 'bool':
+          if (value is bool) await _prefs.setBool(key, value);
+        case 'int':
+          if (value is int) await _prefs.setInt(key, value);
+        case 'double':
+          if (value is num) await _prefs.setDouble(key, value.toDouble());
+        case 'string':
+          if (value is String) await _prefs.setString(key, value);
+        case 'stringList':
+          if (value is List) {
+            await _prefs.setStringList(key, value.map((e) => '$e').toList());
+          }
+        default:
+          continue;
+      }
+      restored++;
+    }
+    return restored;
   }
 
   /// Income, expenses and account transfers as one CSV, newest first.
@@ -191,6 +254,7 @@ class BackupService {
         'accountTransfers': 0,
         'todos': 0,
         'workouts': 0,
+        'preferences': 0,
       };
 
       // Import SharedPreferences categories if present
@@ -201,6 +265,11 @@ class BackupService {
       if (json.containsKey('expenseCategories') && json['expenseCategories'] != null) {
         final List<dynamic> expCats = json['expenseCategories'];
         await _prefs.setStringList('configured_expense_categories', expCats.map((e) => e.toString()).toList());
+      }
+
+      if (json['preferences'] is Map) {
+        counts['preferences'] = await importPreferences(
+            Map<String, dynamic>.from(json['preferences'] as Map));
       }
 
       await _isar.writeTxn(() async {

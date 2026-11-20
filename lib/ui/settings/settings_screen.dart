@@ -67,8 +67,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       return;
     }
 
-    if (!path.endsWith('.hsbackup')) {
-      _showError('Invalid file. Please select a .hsbackup file.');
+    if (!path.endsWith('.hsbackup') && !path.endsWith('.json')) {
+      _showError('Invalid file. Please select a .hsbackup or .json backup file.');
       return;
     }
 
@@ -160,6 +160,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         '  ${counts['wishlist']} wishlist item(s)',
       if (counts['liabilities'] != null && counts['liabilities']! > 0)
         '  ${counts['liabilities']} liability item(s)',
+      if (counts['preferences'] != null && counts['preferences']! > 0)
+        '  ${counts['preferences']} setting(s)',
     ];
 
     showDialog(
@@ -460,7 +462,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           _ActionTile(
             icon: Icons.download_outlined,
             label: 'IMPORT BACKUP',
-            sublabel: 'Merge a .hsbackup file into your current data',
+            sublabel: 'Merge a .hsbackup or Drive .json backup into your current data',
             loading: _importing,
             onTap: _import,
           ),
