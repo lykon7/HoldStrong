@@ -154,8 +154,8 @@ class _CloudBackupSectionState extends ConsumerState<CloudBackupSection> {
           ),
           const SizedBox(height: 8),
           const Text(
-            'Drive folder "${CloudBackupConfig.rootFolderName}": transactions.csv '
-            '(updated daily), last ${CloudBackupConfig.maxDailyBackups} daily '
+            'Drive folder "${CloudBackupConfig.rootFolderName}": transactions.csv, '
+            'fund_accounts.csv and transfers.csv (updated daily), last ${CloudBackupConfig.maxDailyBackups} daily '
             'JSON backups, plus one permanent snapshot per month.',
             style: TextStyle(
               fontFamily: 'IBMPlexMono',

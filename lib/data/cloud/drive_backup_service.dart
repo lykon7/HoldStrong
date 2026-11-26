@@ -49,6 +49,8 @@ class _AuthClient extends http.BaseClient {
 /// ```
 /// HoldStrong Backups/
 ///   transactions.csv                 (overwritten each run)
+///   fund_accounts.csv                (overwritten each run)
+///   transfers.csv                    (overwritten each run)
 ///   daily/holdstrong_2026-11-20.json (newest N kept)
 ///   monthly/holdstrong_2026-11.json  (first backup of each month, never pruned)
 /// ```
@@ -109,6 +111,8 @@ class DriveBackupService {
       // Build the payloads first so a local failure never leaves Drive half-written.
       final jsonBytes = utf8.encode(await backup.buildBackupJson());
       final csvBytes = utf8.encode(await backup.buildTransactionsCsv());
+      final fundsCsvBytes = utf8.encode(await backup.buildFundAccountsCsv());
+      final transfersCsvBytes = utf8.encode(await backup.buildTransfersCsv());
 
       final root = await _ensureFolder(api, CloudBackupConfig.rootFolderName, 'root');
       final daily = await _ensureFolder(api, CloudBackupConfig.dailyFolderName, root);
@@ -117,8 +121,12 @@ class DriveBackupService {
       final day = '${now.year}-${_z(now.month)}-${_z(now.day)}';
       final month = '${now.year}-${_z(now.month)}';
 
-      // 1. CSV — one file, overwritten.
+      // 1. CSVs — one file each, overwritten.
       await _upsert(api, CloudBackupConfig.csvFileName, root, csvBytes, 'text/csv');
+      await _upsert(api, CloudBackupConfig.fundAccountsCsvFileName, root,
+          fundsCsvBytes, 'text/csv');
+      await _upsert(api, CloudBackupConfig.transfersCsvFileName, root,
+          transfersCsvBytes, 'text/csv');
 
       // 2. Dated JSON — one per day (re-running on the same day replaces it).
       await _upsert(api, 'holdstrong_$day.json', daily, jsonBytes, 'application/json');

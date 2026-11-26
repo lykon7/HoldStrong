@@ -218,6 +218,82 @@ class BackupService {
     return buf.toString();
   }
 
+  /// Everything on the Funds → Accounts tab: each account with its opening
+  /// and current balance (opening + income − expenses ± transfers).
+  Future<String> buildFundAccountsCsv() async {
+    return fundAccountsCsv(
+      funds: await _isar.fundAccounts.where().findAll(),
+      incomes: await _isar.incomeEntrys.where().findAll(),
+      expenses: await _isar.expenseEntrys.where().findAll(),
+      transfers: await _isar.accountTransfers.where().findAll(),
+    );
+  }
+
+  /// Everything on the Funds → Transfers tab, newest first, with the source
+  /// and destination accounts in their own columns.
+  Future<String> buildTransfersCsv() async {
+    return transfersCsv(
+      funds: await _isar.fundAccounts.where().findAll(),
+      transfers: await _isar.accountTransfers.where().findAll(),
+    );
+  }
+
+  @visibleForTesting
+  static String fundAccountsCsv({
+    required List<FundAccount> funds,
+    required List<IncomeEntry> incomes,
+    required List<ExpenseEntry> expenses,
+    required List<AccountTransfer> transfers,
+  }) {
+    final sorted = [...funds]..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    final buf = StringBuffer('\uFEFF')
+      ..writeln('name,opening_balance,current_balance,created_at,uuid');
+    for (final f in sorted) {
+      var balance = f.openingBalance;
+      for (final e in incomes) {
+        if (e.fundUuid == f.uuid) balance += e.amount;
+      }
+      for (final e in expenses) {
+        if (e.fundUuid == f.uuid) balance -= e.amount;
+      }
+      for (final t in transfers) {
+        if (t.toFundUuid == f.uuid) balance += t.amount;
+        if (t.fromFundUuid == f.uuid) balance -= t.amount;
+      }
+      buf.writeln([
+        f.name,
+        f.openingBalance,
+        balance,
+        f.createdAt.toIso8601String(),
+        f.uuid,
+      ].map(_csvCell).join(','));
+    }
+    return buf.toString();
+  }
+
+  @visibleForTesting
+  static String transfersCsv({
+    required List<FundAccount> funds,
+    required List<AccountTransfer> transfers,
+  }) {
+    final names = {for (final f in funds) f.uuid: f.name};
+    final sorted = [...transfers]
+      ..sort((a, b) => b.transferAt.compareTo(a.transferAt));
+    final buf = StringBuffer('\uFEFF')
+      ..writeln('date,amount,from_account,to_account,note,uuid');
+    for (final t in sorted) {
+      buf.writeln([
+        t.transferAt.toIso8601String(),
+        t.amount,
+        names[t.fromFundUuid] ?? '',
+        names[t.toFundUuid] ?? '',
+        t.note,
+        t.uuid,
+      ].map(_csvCell).join(','));
+    }
+    return buf.toString();
+  }
+
   static String _csvCell(Object? v) {
     if (v == null) return '';
     final s = v.toString();

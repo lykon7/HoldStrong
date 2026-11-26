@@ -20,6 +20,8 @@ class CloudBackupConfig {
   static const String dailyFolderName = 'daily';
   static const String monthlyFolderName = 'monthly';
   static const String csvFileName = 'transactions.csv';
+  static const String fundAccountsCsvFileName = 'fund_accounts.csv';
+  static const String transfersCsvFileName = 'transfers.csv';
 
   /// How many dated JSON backups to keep in the daily folder.
   static const int maxDailyBackups = 10;
