@@ -83,7 +83,7 @@ class QuickTransactionsPickerDialog extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const Text(
-                      'Pick the presets to show on the home screen. Manage them in Settings.',
+                      'Pick the presets to show on the home screen. Tap one to open it pre-filled; long-press to log it instantly (needs an amount and a fund). Manage presets in Settings.',
                       style: TextStyle(
                         fontFamily: 'IBMPlexMono',
                         fontSize: 11,
