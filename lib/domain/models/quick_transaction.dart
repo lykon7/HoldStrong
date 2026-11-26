@@ -1,16 +1,19 @@
 import 'dart:convert';
+import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 enum QuickTransactionType { income, expense }
 
 /// A saved preset for the add-transaction sheet: name (purpose/source),
-/// category and fund account are pre-filled when it is tapped.
+/// category, fund account and (optionally) amount are pre-filled when it is
+/// tapped.
 class QuickTransaction {
   final String id;
   final QuickTransactionType type;
   final String name;
   final String? category;
   final String? fundUuid;
+  final double? amount;
 
   const QuickTransaction({
     required this.id,
@@ -18,6 +21,7 @@ class QuickTransaction {
     required this.name,
     this.category,
     this.fundUuid,
+    this.amount,
   });
 
   factory QuickTransaction.create({
@@ -25,6 +29,7 @@ class QuickTransaction {
     required String name,
     String? category,
     String? fundUuid,
+    double? amount,
   }) {
     return QuickTransaction(
       id: const Uuid().v4(),
@@ -32,7 +37,22 @@ class QuickTransaction {
       name: name,
       category: category,
       fundUuid: fundUuid,
+      amount: amount,
     );
+  }
+
+  /// Amount as text for an input field: no trailing ".0".
+  String? get amountInput {
+    final a = amount;
+    if (a == null) return null;
+    return a == a.roundToDouble() ? a.toStringAsFixed(0) : a.toString();
+  }
+
+  /// Amount for display, e.g. "1,500".
+  String? get amountLabel {
+    final a = amount;
+    if (a == null) return null;
+    return NumberFormat('#,##0.##').format(a);
   }
 
   Map<String, dynamic> toMap() => {
@@ -41,6 +61,7 @@ class QuickTransaction {
         'name': name,
         'category': category,
         'fundUuid': fundUuid,
+        'amount': amount,
       };
 
   factory QuickTransaction.fromMap(Map<String, dynamic> map) {
@@ -52,6 +73,7 @@ class QuickTransaction {
       name: map['name'] ?? '',
       category: map['category'],
       fundUuid: map['fundUuid'],
+      amount: (map['amount'] as num?)?.toDouble(),
     );
   }
 
@@ -60,12 +82,13 @@ class QuickTransaction {
   factory QuickTransaction.fromJson(String source) =>
       QuickTransaction.fromMap(json.decode(source));
 
-  /// Explicit nulls are meaningful here (clearing category / fund), so the
+  /// Explicit nulls are meaningful here (clearing category / fund / amount), so the
   /// edit is expressed by building a new instance instead of copyWith.
   QuickTransaction edited({
     required String name,
     required String? category,
     required String? fundUuid,
+    required double? amount,
   }) {
     return QuickTransaction(
       id: id,
@@ -73,6 +96,7 @@ class QuickTransaction {
       name: name,
       category: category,
       fundUuid: fundUuid,
+      amount: amount,
     );
   }
 }

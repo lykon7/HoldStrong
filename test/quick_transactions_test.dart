@@ -22,6 +22,7 @@ void main() {
       name: 'Fuel',
       category: 'Fuel',
       fundUuid: 'fund-1',
+      amount: 1500,
     );
     final salary = QuickTransaction.create(
       type: QuickTransactionType.income,
@@ -35,15 +36,21 @@ void main() {
     expect(reloaded.map((q) => q.name), ['Fuel', 'SALARY']);
     expect(reloaded[0].type, QuickTransactionType.expense);
     expect(reloaded[0].fundUuid, 'fund-1');
+    expect(reloaded[0].amount, 1500);
+    expect(reloaded[0].amountInput, '1500');
+    expect(reloaded[0].amountLabel, '1,500');
     expect(reloaded[1].category, isNull);
+    expect(reloaded[1].amount, isNull);
 
     // Editing can clear category and fund.
     await notifier.update(
-        fuel.edited(name: 'Petrol', category: null, fundUuid: null));
+        fuel.edited(
+            name: 'Petrol', category: null, fundUuid: null, amount: null));
     reloaded = QuickTransactionsNotifier(prefs).state;
     expect(reloaded[0].name, 'Petrol');
     expect(reloaded[0].category, isNull);
     expect(reloaded[0].fundUuid, isNull);
+    expect(reloaded[0].amount, isNull);
 
     // Included in the generic preferences backup and restorable.
     final exported = BackupService(_FakeIsar(), prefs).exportPreferences();

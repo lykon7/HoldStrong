@@ -1307,11 +1307,12 @@ class _AddIncomeSheetState extends ConsumerState<_AddIncomeSheet> {
     if (mounted) Navigator.of(context).pop();
   }
 
-  /// Pre-fills source, category and fund from a quick-add preset.
+  /// Pre-fills source, amount, category and fund from a quick-add preset.
   void _applyQuick(QuickTransaction q) {
     final funds = ref.read(allFundAccountsProvider).value ?? [];
     setState(() {
       _sourceCtrl.text = q.name;
+      if (q.amountInput != null) _amountCtrl.text = q.amountInput!;
       _selectedCategory =
           ref.read(incomeCategoriesProvider).contains(q.category)
               ? q.category
@@ -2175,7 +2176,7 @@ class _AddExpenseSheetState extends ConsumerState<_AddExpenseSheet> {
     if (mounted) Navigator.of(context).pop();
   }
 
-  /// Pre-fills purpose, category and fund from a quick-add preset.
+  /// Pre-fills purpose, amount, category and fund from a quick-add preset.
   void _applyQuick(QuickTransaction q) {
     final allFunds = ref.read(allFundAccountsProvider).value ?? [];
     final deductible = ref.read(deductibleFundAccountsProvider);
@@ -2184,6 +2185,7 @@ class _AddExpenseSheetState extends ConsumerState<_AddExpenseSheet> {
         : allFunds.where((a) => deductible.contains(a.uuid)).toList();
     setState(() {
       _purposeCtrl.text = q.name;
+      if (q.amountInput != null) _amountCtrl.text = q.amountInput!;
       _selectedCategory =
           ref.read(expenseCategoriesProvider).contains(q.category)
               ? q.category
@@ -2967,6 +2969,17 @@ class _QuickAddRow extends StatelessWidget {
                           color: accent,
                         ),
                       ),
+                      if (q.amountLabel != null) ...[
+                        const SizedBox(width: 6),
+                        Text(
+                          q.amountLabel!,
+                          style: const TextStyle(
+                            fontFamily: 'IBMPlexMono',
+                            fontSize: 10,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

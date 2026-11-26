@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme.dart';
 import '../../../domain/models/quick_transaction.dart';
@@ -64,8 +65,8 @@ class QuickTransactionsConfigDialog extends ConsumerWidget {
           children: [
             Text(
               _isIncome
-                  ? 'Presets shown at the top of the Add Income window. Tapping one fills in the source, category and fund.'
-                  : 'Presets shown at the top of the Add Expense window. Tapping one fills in the purpose, category and fund.',
+                  ? 'Presets shown at the top of the Add Income window. Tapping one fills in the source, category, fund and amount.'
+                  : 'Presets shown at the top of the Add Expense window. Tapping one fills in the purpose, category, fund and amount.',
               style: const TextStyle(
                 fontFamily: 'IBMPlexMono',
                 fontSize: 11,
@@ -93,6 +94,7 @@ class QuickTransactionsConfigDialog extends ConsumerWidget {
                   itemBuilder: (ctx, i) {
                     final q = items[i];
                     final detail = [
+                      if (q.amountLabel != null) 'RS ${q.amountLabel}',
                       if (q.category != null) q.category!,
                       if (fundName(q.fundUuid) != null) fundName(q.fundUuid)!,
                     ].join(' · ');
@@ -175,6 +177,7 @@ class _QuickTransactionEditor extends ConsumerStatefulWidget {
 class _QuickTransactionEditorState
     extends ConsumerState<_QuickTransactionEditor> {
   late final TextEditingController _nameCtrl;
+  late final TextEditingController _amountCtrl;
   String? _category;
   String? _fundUuid;
 
@@ -184,6 +187,7 @@ class _QuickTransactionEditorState
   void initState() {
     super.initState();
     _nameCtrl = TextEditingController(text: widget.existing?.name);
+    _amountCtrl = TextEditingController(text: widget.existing?.amountInput);
     _category = widget.existing?.category;
     _fundUuid = widget.existing?.fundUuid;
   }
@@ -191,6 +195,7 @@ class _QuickTransactionEditorState
   @override
   void dispose() {
     _nameCtrl.dispose();
+    _amountCtrl.dispose();
     super.dispose();
   }
 
@@ -200,6 +205,10 @@ class _QuickTransactionEditorState
     // Income sources are shown in capitals throughout the app.
     if (_isIncome) name = name.toUpperCase();
 
+    // Blank or zero means "no preset amount".
+    final parsed = double.tryParse(_amountCtrl.text.trim());
+    final amount = (parsed != null && parsed > 0) ? parsed : null;
+
     final notifier = ref.read(quickTransactionsProvider.notifier);
     final existing = widget.existing;
     if (existing == null) {
@@ -208,12 +217,14 @@ class _QuickTransactionEditorState
         name: name,
         category: _category,
         fundUuid: _fundUuid,
+        amount: amount,
       ));
     } else {
       await notifier.update(existing.edited(
         name: name,
         category: _category,
         fundUuid: _fundUuid,
+        amount: amount,
       ));
     }
     if (mounted) Navigator.pop(context);
@@ -265,6 +276,25 @@ class _QuickTransactionEditorState
                 isDense: true,
                 labelText: _isIncome ? 'Source (e.g. Salary)' : 'Name (e.g. Fuel)',
                 labelStyle: const TextStyle(color: AppColors.textSecondary),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _amountCtrl,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
+              ],
+              style: const TextStyle(
+                fontFamily: 'IBMPlexMono',
+                fontSize: 12,
+                color: AppColors.textPrimary,
+              ),
+              decoration: const InputDecoration(
+                isDense: true,
+                labelText: 'Amount in LKR (optional)',
+                labelStyle: TextStyle(color: AppColors.textSecondary),
               ),
             ),
             const SizedBox(height: 16),
