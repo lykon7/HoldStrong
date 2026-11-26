@@ -8,6 +8,8 @@ import '../../core/theme.dart';
 import '../../data/models/expense_entry.dart';
 import '../../data/models/income_entry.dart';
 import '../../data/models/recurring_transaction.dart';
+import '../../domain/models/quick_transaction.dart';
+import '../../domain/providers/quick_transaction_providers.dart';
 import '../../domain/providers/expense_providers.dart';
 import '../../domain/providers/income_providers.dart';
 import '../../domain/providers/fund_providers.dart';
@@ -1305,6 +1307,21 @@ class _AddIncomeSheetState extends ConsumerState<_AddIncomeSheet> {
     if (mounted) Navigator.of(context).pop();
   }
 
+  /// Pre-fills source, category and fund from a quick-add preset.
+  void _applyQuick(QuickTransaction q) {
+    final funds = ref.read(allFundAccountsProvider).value ?? [];
+    setState(() {
+      _sourceCtrl.text = q.name;
+      _selectedCategory =
+          ref.read(incomeCategoriesProvider).contains(q.category)
+              ? q.category
+              : null;
+      if (funds.any((a) => a.uuid == q.fundUuid)) {
+        _selectedFundUuid = q.fundUuid;
+      }
+    });
+  }
+
   Future<void> _pickDateTime() async {
     final pickedDate = await showDatePicker(
       context: context,
@@ -1387,6 +1404,11 @@ class _AddIncomeSheetState extends ConsumerState<_AddIncomeSheet> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                _QuickAddRow(
+                  presets: ref.watch(quickIncomesProvider),
+                  accent: _kIncomeGreen,
+                  onSelect: _applyQuick,
+                ),
                 const _SheetLabel('AMOUNT (LKR)'),
                 const SizedBox(height: 8),
                 TextField(
@@ -2153,6 +2175,25 @@ class _AddExpenseSheetState extends ConsumerState<_AddExpenseSheet> {
     if (mounted) Navigator.of(context).pop();
   }
 
+  /// Pre-fills purpose, category and fund from a quick-add preset.
+  void _applyQuick(QuickTransaction q) {
+    final allFunds = ref.read(allFundAccountsProvider).value ?? [];
+    final deductible = ref.read(deductibleFundAccountsProvider);
+    final available = deductible.isEmpty
+        ? allFunds
+        : allFunds.where((a) => deductible.contains(a.uuid)).toList();
+    setState(() {
+      _purposeCtrl.text = q.name;
+      _selectedCategory =
+          ref.read(expenseCategoriesProvider).contains(q.category)
+              ? q.category
+              : null;
+      if (available.any((a) => a.uuid == q.fundUuid)) {
+        _selectedFundUuid = q.fundUuid;
+      }
+    });
+  }
+
   Future<void> _pickDateTime() async {
     final pickedDate = await showDatePicker(
       context: context,
@@ -2242,6 +2283,11 @@ class _AddExpenseSheetState extends ConsumerState<_AddExpenseSheet> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                _QuickAddRow(
+                  presets: ref.watch(quickExpensesProvider),
+                  accent: const Color(0xFF4A90D9),
+                  onSelect: _applyQuick,
+                ),
                 const _SheetLabel('AMOUNT (LKR)'),
                 const SizedBox(height: 8),
                 TextField(
@@ -2864,6 +2910,68 @@ class _EditExpenseSheetState extends ConsumerState<_EditExpenseSheet> {
                 const SizedBox(height: 8),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Wrapped row of quick-add presets shown at the top of the
+/// add sheets. Renders nothing when there are no presets.
+class _QuickAddRow extends StatelessWidget {
+  const _QuickAddRow({
+    required this.presets,
+    required this.accent,
+    required this.onSelect,
+  });
+
+  final List<QuickTransaction> presets;
+  final Color accent;
+  final ValueChanged<QuickTransaction> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    if (presets.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SheetLabel('QUICK ADD'),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: presets.map((q) {
+              return GestureDetector(
+                onTap: () => onSelect(q),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: accent.withOpacity(0.08),
+                    border: Border.all(color: accent.withOpacity(0.5)),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.bolt, size: 12, color: accent),
+                      const SizedBox(width: 4),
+                      Text(
+                        q.name,
+                        style: TextStyle(
+                          fontFamily: 'IBMPlexMono',
+                          fontSize: 12,
+                          color: accent,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
           ),
         ],
       ),

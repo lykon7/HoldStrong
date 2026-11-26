@@ -14,7 +14,9 @@ import '../../data/models/fund_account.dart';
 import '../../domain/providers/expense_providers.dart';
 import '../../domain/providers/fund_providers.dart';
 import 'widgets/cloud_backup_section.dart';
+import '../../domain/models/quick_transaction.dart';
 import 'widgets/custom_timers_config.dart';
+import 'widgets/quick_transactions_config.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -318,6 +320,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  void _showQuickTransactionsDialog(
+      BuildContext context, QuickTransactionType type) {
+    showDialog(
+      context: context,
+      builder: (_) => ProviderScope(
+        parent: ProviderScope.containerOf(context),
+        child: QuickTransactionsConfigDialog(type: type),
+      ),
+    );
+  }
+
   void _showCustomTimersDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
@@ -431,6 +444,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             sublabel: 'Configure categories for expenses',
             loading: false,
             onTap: () => _showExpenseCategoriesDialog(context, ref),
+          ),
+
+          const SizedBox(height: 8),
+
+          _ActionTile(
+            icon: Icons.bolt_outlined,
+            label: 'QUICK EXPENSES',
+            sublabel: 'Presets that pre-fill name, category and fund when adding an expense',
+            loading: false,
+            onTap: () => _showQuickTransactionsDialog(
+                context, QuickTransactionType.expense),
+          ),
+
+          const SizedBox(height: 8),
+
+          _ActionTile(
+            icon: Icons.bolt_outlined,
+            label: 'QUICK INCOME',
+            sublabel: 'Presets that pre-fill source, category and fund when adding income',
+            loading: false,
+            onTap: () => _showQuickTransactionsDialog(
+                context, QuickTransactionType.income),
           ),
 
           const SizedBox(height: 8),
