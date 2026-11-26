@@ -37,10 +37,23 @@ void main() {
     expect(reloaded[0].type, QuickTransactionType.expense);
     expect(reloaded[0].fundUuid, 'fund-1');
     expect(reloaded[0].amount, 1500);
+    expect(reloaded[0].onHome, true); // pinned by default
     expect(reloaded[0].amountInput, '1500');
     expect(reloaded[0].amountLabel, '1,500');
     expect(reloaded[1].category, isNull);
     expect(reloaded[1].amount, isNull);
+
+    // Unpinning from home survives a reload and keeps the other fields.
+    await notifier.update(fuel.withOnHome(false));
+    reloaded = QuickTransactionsNotifier(prefs).state;
+    expect(reloaded[0].onHome, false);
+    expect(reloaded[0].name, 'Fuel');
+    expect(reloaded[0].amount, 1500);
+    // Legacy entries saved before onHome existed default to pinned.
+    expect(
+        QuickTransaction.fromMap({'id': 'x', 'type': 'income', 'name': 'A'})
+            .onHome,
+        true);
 
     // Editing can clear category and fund.
     await notifier.update(

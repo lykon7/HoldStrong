@@ -15,6 +15,9 @@ class QuickTransaction {
   final String? fundUuid;
   final double? amount;
 
+  /// Whether the preset is pinned to the row on the home screen.
+  final bool onHome;
+
   const QuickTransaction({
     required this.id,
     required this.type,
@@ -22,6 +25,7 @@ class QuickTransaction {
     this.category,
     this.fundUuid,
     this.amount,
+    this.onHome = true,
   });
 
   factory QuickTransaction.create({
@@ -62,6 +66,7 @@ class QuickTransaction {
         'category': category,
         'fundUuid': fundUuid,
         'amount': amount,
+        'onHome': onHome,
       };
 
   factory QuickTransaction.fromMap(Map<String, dynamic> map) {
@@ -74,6 +79,7 @@ class QuickTransaction {
       category: map['category'],
       fundUuid: map['fundUuid'],
       amount: (map['amount'] as num?)?.toDouble(),
+      onHome: map['onHome'] ?? true,
     );
   }
 
@@ -97,6 +103,19 @@ class QuickTransaction {
       category: category,
       fundUuid: fundUuid,
       amount: amount,
+      onHome: onHome,
+    );
+  }
+
+  QuickTransaction withOnHome(bool value) {
+    return QuickTransaction(
+      id: id,
+      type: type,
+      name: name,
+      category: category,
+      fundUuid: fundUuid,
+      amount: amount,
+      onHome: value,
     );
   }
 }

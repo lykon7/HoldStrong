@@ -17,6 +17,29 @@ import '../../domain/providers/recurring_transaction_providers.dart';
 const _kIncomeGreen = Color(0xFF3DAA6E);
 const _kExpenseRed = AppColors.destructive;
 
+/// Opens the Add Income / Add Expense sheet. When [preset] is given the form
+/// starts pre-filled from that quick-add preset.
+void showAddTransactionSheet(
+  BuildContext context,
+  QuickTransactionType type, {
+  QuickTransaction? preset,
+}) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: AppColors.backgroundSurface,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(4)),
+    ),
+    builder: (_) => ProviderScope(
+      parent: ProviderScope.containerOf(context),
+      child: type == QuickTransactionType.income
+          ? _AddIncomeSheet(preset: preset)
+          : _AddExpenseSheet(preset: preset),
+    ),
+  );
+}
+
 class TransactionsScreen extends ConsumerStatefulWidget {
   const TransactionsScreen({super.key});
 
@@ -485,20 +508,8 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     );
   }
 
-  void _showAddIncomeSheet(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.backgroundSurface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(4)),
-      ),
-      builder: (_) => ProviderScope(
-        parent: ProviderScope.containerOf(context),
-        child: const _AddIncomeSheet(),
-      ),
-    );
-  }
+  void _showAddIncomeSheet(BuildContext context, WidgetRef ref) =>
+      showAddTransactionSheet(context, QuickTransactionType.income);
 
   void _showEditIncomeSheet(
     BuildContext context,
@@ -519,20 +530,8 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     );
   }
 
-  void _showAddExpenseSheet(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.backgroundSurface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(4)),
-      ),
-      builder: (_) => ProviderScope(
-        parent: ProviderScope.containerOf(context),
-        child: const _AddExpenseSheet(),
-      ),
-    );
-  }
+  void _showAddExpenseSheet(BuildContext context, WidgetRef ref) =>
+      showAddTransactionSheet(context, QuickTransactionType.expense);
 
   void _showEditExpenseSheet(
     BuildContext context,
@@ -1236,7 +1235,10 @@ class _EmptyState extends StatelessWidget {
 }
 
 class _AddIncomeSheet extends ConsumerStatefulWidget {
-  const _AddIncomeSheet();
+  const _AddIncomeSheet({this.preset});
+
+  final QuickTransaction? preset;
+
   @override
   ConsumerState<_AddIncomeSheet> createState() => _AddIncomeSheetState();
 }
@@ -1257,6 +1259,8 @@ class _AddIncomeSheetState extends ConsumerState<_AddIncomeSheet> {
   @override
   void initState() {
     super.initState();
+    final preset = widget.preset;
+    if (preset != null) _prefill(preset);
     WidgetsBinding.instance
         .addPostFrameCallback((_) => _amountFocus.requestFocus());
   }
@@ -1308,19 +1312,20 @@ class _AddIncomeSheetState extends ConsumerState<_AddIncomeSheet> {
   }
 
   /// Pre-fills source, amount, category and fund from a quick-add preset.
-  void _applyQuick(QuickTransaction q) {
-    final funds = ref.read(allFundAccountsProvider).value ?? [];
-    setState(() {
-      _sourceCtrl.text = q.name;
-      if (q.amountInput != null) _amountCtrl.text = q.amountInput!;
-      _selectedCategory =
-          ref.read(incomeCategoriesProvider).contains(q.category)
-              ? q.category
-              : null;
-      if (funds.any((a) => a.uuid == q.fundUuid)) {
-        _selectedFundUuid = q.fundUuid;
-      }
-    });
+  void _applyQuick(QuickTransaction q) => setState(() => _prefill(q));
+
+  void _prefill(QuickTransaction q) {
+    // Null while the fund list is still loading: trust the preset then.
+    final funds = ref.read(allFundAccountsProvider).value;
+    _sourceCtrl.text = q.name;
+    if (q.amountInput != null) _amountCtrl.text = q.amountInput!;
+    _selectedCategory = ref.read(incomeCategoriesProvider).contains(q.category)
+        ? q.category
+        : null;
+    if (q.fundUuid != null &&
+        (funds == null || funds.any((a) => a.uuid == q.fundUuid))) {
+      _selectedFundUuid = q.fundUuid;
+    }
   }
 
   Future<void> _pickDateTime() async {
@@ -2100,7 +2105,9 @@ class _EditIncomeSheetState extends ConsumerState<_EditIncomeSheet> {
 }
 
 class _AddExpenseSheet extends ConsumerStatefulWidget {
-  const _AddExpenseSheet();
+  const _AddExpenseSheet({this.preset});
+
+  final QuickTransaction? preset;
 
   @override
   ConsumerState<_AddExpenseSheet> createState() => _AddExpenseSheetState();
@@ -2122,6 +2129,8 @@ class _AddExpenseSheetState extends ConsumerState<_AddExpenseSheet> {
   @override
   void initState() {
     super.initState();
+    final preset = widget.preset;
+    if (preset != null) _prefill(preset);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _amountFocus.requestFocus();
     });
@@ -2177,23 +2186,23 @@ class _AddExpenseSheetState extends ConsumerState<_AddExpenseSheet> {
   }
 
   /// Pre-fills purpose, amount, category and fund from a quick-add preset.
-  void _applyQuick(QuickTransaction q) {
-    final allFunds = ref.read(allFundAccountsProvider).value ?? [];
+  void _applyQuick(QuickTransaction q) => setState(() => _prefill(q));
+
+  void _prefill(QuickTransaction q) {
+    // Null while the fund list is still loading: trust the preset then.
+    final allFunds = ref.read(allFundAccountsProvider).value;
     final deductible = ref.read(deductibleFundAccountsProvider);
-    final available = deductible.isEmpty
-        ? allFunds
-        : allFunds.where((a) => deductible.contains(a.uuid)).toList();
-    setState(() {
-      _purposeCtrl.text = q.name;
-      if (q.amountInput != null) _amountCtrl.text = q.amountInput!;
-      _selectedCategory =
-          ref.read(expenseCategoriesProvider).contains(q.category)
-              ? q.category
-              : null;
-      if (available.any((a) => a.uuid == q.fundUuid)) {
-        _selectedFundUuid = q.fundUuid;
-      }
-    });
+    final fundOk = allFunds == null ||
+        allFunds.any((a) =>
+            a.uuid == q.fundUuid &&
+            (deductible.isEmpty || deductible.contains(a.uuid)));
+    _purposeCtrl.text = q.name;
+    if (q.amountInput != null) _amountCtrl.text = q.amountInput!;
+    _selectedCategory =
+        ref.read(expenseCategoriesProvider).contains(q.category)
+            ? q.category
+            : null;
+    if (q.fundUuid != null && fundOk) _selectedFundUuid = q.fundUuid;
   }
 
   Future<void> _pickDateTime() async {
