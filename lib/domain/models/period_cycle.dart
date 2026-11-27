@@ -1,11 +1,16 @@
 /// Period tracker maths. Pure Dart so it is easy to test.
 ///
-/// Only period *start* dates are stored. Everything else (the 5 period days,
-/// the countdown to the next one) is derived from the latest start.
+/// A period is stored as its *start* date plus an optional *end* date (the
+/// last day of bleeding). Without an end date it is assumed to last
+/// [kPeriodLengthDays]. The countdown to the next period always runs from the
+/// latest start.
 library;
 
 /// A period typically lasts this many days (the start day is day 1).
 const kPeriodLengthDays = 5;
+
+/// The longest period the app will accept when setting an end date.
+const kMaxPeriodLengthDays = 14;
 
 /// Start of one period to the start of the next. This is a rough estimate.
 const kCycleLengthDays = 28;
@@ -26,11 +31,111 @@ int daysBetween(DateTime a, DateTime b) {
 
 DateTime addDays(DateTime d, int days) => DateTime(d.year, d.month, d.day + days);
 
+/// Every logged period: start dates (newest first) and optional end dates.
+/// Immutable; the `with…` methods return a modified copy.
+class PeriodLog {
+  PeriodLog({
+    Iterable<DateTime> starts = const [],
+    Map<DateTime, DateTime> ends = const {},
+  })  : starts = (starts.map(dateOnly).toSet().toList()
+          ..sort((a, b) => b.compareTo(a))),
+        _ends = {
+          for (final e in ends.entries) dateOnly(e.key): dateOnly(e.value),
+        };
+
+  /// First day of each period, newest first.
+  final List<DateTime> starts;
+
+  /// Raw end dates keyed by start. Prefer [endOf], which sanity-checks them.
+  final Map<DateTime, DateTime> _ends;
+
+  bool get isEmpty => starts.isEmpty;
+
+  /// Raw stored ends, for persisting.
+  Map<DateTime, DateTime> get storedEnds => Map.unmodifiable(_ends);
+
+  /// The earliest start strictly after [start], if any.
+  DateTime? nextStartAfter(DateTime start) {
+    DateTime? next;
+    for (final s in starts) {
+      if (s.isAfter(start) && (next == null || s.isBefore(next))) next = s;
+    }
+    return next;
+  }
+
+  /// Last day of the period that began on [start], or null if none was set.
+  /// Ignored if it precedes the start, and cut short so it never runs into
+  /// the next period.
+  DateTime? endOf(DateTime start) {
+    final s = dateOnly(start);
+    final e = _ends[s];
+    if (e == null || e.isBefore(s)) return null;
+    final next = nextStartAfter(s);
+    if (next != null && !e.isBefore(next)) return addDays(next, -1);
+    return e;
+  }
+
+  /// Days the period starting on [start] lasted (or is assumed to last).
+  int lengthOf(DateTime start) {
+    final s = dateOnly(start);
+    final e = endOf(s);
+    if (e != null) return daysBetween(s, e) + 1;
+    final next = nextStartAfter(s);
+    if (next == null) return kPeriodLengthDays;
+    final gap = daysBetween(s, next);
+    return gap < kPeriodLengthDays ? gap : kPeriodLengthDays;
+  }
+
+  /// The latest start on or before [day], if any.
+  DateTime? latestStartOnOrBefore(DateTime day) {
+    final d = dateOnly(day);
+    for (final s in starts) {
+      if (!s.isAfter(d)) return s; // starts are newest first
+    }
+    return null;
+  }
+
+  PeriodLog withStart(DateTime day) =>
+      PeriodLog(starts: [...starts, day], ends: _ends);
+
+  /// Removes a period, and its end date with it.
+  PeriodLog withoutStart(DateTime day) {
+    final d = dateOnly(day);
+    return PeriodLog(
+      starts: starts.where((s) => s != d),
+      ends: {
+        for (final e in _ends.entries)
+          if (e.key != d) e.key: e.value,
+      },
+    );
+  }
+
+  /// Sets the last day of the period that began on [start]. Ignored if there
+  /// is no such period or [end] is before it.
+  PeriodLog withEnd(DateTime start, DateTime end) {
+    final s = dateOnly(start);
+    final e = dateOnly(end);
+    if (!starts.contains(s) || e.isBefore(s)) return this;
+    return PeriodLog(starts: starts, ends: {..._ends, s: e});
+  }
+
+  PeriodLog withoutEnd(DateTime start) {
+    final s = dateOnly(start);
+    return PeriodLog(
+      starts: starts,
+      ends: {
+        for (final e in _ends.entries)
+          if (e.key != s) e.key: e.value,
+      },
+    );
+  }
+}
+
 enum PeriodPhase {
   /// Nothing logged yet.
   noData,
 
-  /// Inside the 5 period days.
+  /// Inside the period itself (its 5 days, or up to its end date).
   onPeriod,
 
   /// Period is over and the next one isn't due for a while.
@@ -47,6 +152,7 @@ class PeriodStatus {
   const PeriodStatus._({
     required this.phase,
     this.lastStart,
+    this.periodLength,
     this.dayOfPeriod,
     this.expectedStart,
     this.daysUntilExpected,
@@ -58,6 +164,9 @@ class PeriodStatus {
 
   /// First day of the most recent period.
   final DateTime? lastStart;
+
+  /// How many days that period lasts (set end date, else the default).
+  final int? periodLength;
 
   /// 1-based day within the period; only set while [phase] is `onPeriod`.
   final int? dayOfPeriod;
@@ -78,7 +187,7 @@ class PeriodStatus {
 
   /// Days remaining in the current period, including today.
   int? get periodDaysLeft =>
-      dayOfPeriod == null ? null : kPeriodLengthDays - dayOfPeriod! + 1;
+      dayOfPeriod == null ? null : periodLength! - dayOfPeriod! + 1;
 
   /// Days past the end of the expected window; only meaningful when overdue.
   int get daysLate => phase == PeriodPhase.overdue
@@ -87,22 +196,18 @@ class PeriodStatus {
 
   /// Works out where [today] sits relative to the latest start on or before
   /// it. Starts in the future are ignored.
-  static PeriodStatus of(Iterable<DateTime> starts, DateTime today) {
+  static PeriodStatus of(PeriodLog log, DateTime today) {
     final t = dateOnly(today);
-    DateTime? last;
-    for (final s in starts) {
-      final d = dateOnly(s);
-      if (d.isAfter(t)) continue;
-      if (last == null || d.isAfter(last)) last = d;
-    }
+    final last = log.latestStartOnOrBefore(t);
     if (last == null) return const PeriodStatus.noData();
 
+    final length = log.lengthOf(last);
     final expected = addDays(last, kCycleLengthDays);
     final until = daysBetween(t, expected);
     final sinceStart = daysBetween(last, t); // 0 on the start day
 
     final PeriodPhase phase;
-    if (sinceStart < kPeriodLengthDays) {
+    if (sinceStart < length) {
       phase = PeriodPhase.onPeriod;
     } else if (until > kCycleVarianceDays) {
       phase = PeriodPhase.countdown;
@@ -115,6 +220,7 @@ class PeriodStatus {
     return PeriodStatus._(
       phase: phase,
       lastStart: last,
+      periodLength: length,
       dayOfPeriod: phase == PeriodPhase.onPeriod ? sinceStart + 1 : null,
       expectedStart: expected,
       daysUntilExpected: until,
@@ -122,12 +228,12 @@ class PeriodStatus {
   }
 }
 
-/// Whether [day] falls inside one of the 5-day periods that began on [starts].
-bool isPeriodDay(Iterable<DateTime> starts, DateTime day) {
+/// Whether [day] falls inside a logged period.
+bool isPeriodDay(PeriodLog log, DateTime day) {
   final d = dateOnly(day);
-  for (final s in starts) {
-    final offset = daysBetween(dateOnly(s), d);
-    if (offset >= 0 && offset < kPeriodLengthDays) return true;
+  for (final s in log.starts) {
+    final offset = daysBetween(s, d);
+    if (offset >= 0 && offset < log.lengthOf(s)) return true;
   }
   return false;
 }

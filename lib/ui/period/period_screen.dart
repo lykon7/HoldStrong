@@ -20,8 +20,13 @@ class PeriodScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final starts = ref.watch(periodStartsProvider);
-    final status = PeriodStatus.of(starts, DateTime.now());
+    final log = ref.watch(periodLogProvider);
+    final status = PeriodStatus.of(log, DateTime.now());
+    // Offer a quick "end" while a period is under way and has no end date.
+    final openStart = status.phase == PeriodPhase.onPeriod &&
+            log.endOf(status.lastStart!) == null
+        ? status.lastStart
+        : null;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Period Tracker')),
@@ -30,17 +35,33 @@ class PeriodScreen extends ConsumerWidget {
         children: [
           _StatusCard(status: status),
           const SizedBox(height: 12),
-          FilledButton.icon(
-            onPressed: () => _pickStartDate(context, ref),
-            icon: const Icon(Icons.water_drop_outlined),
-            label: const Text('MARK PERIOD STARTED'),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: () => _pickStartDate(context, ref),
+                  icon: const Icon(Icons.water_drop_outlined),
+                  label: const Text('MARK START'),
+                ),
+              ),
+              if (openStart != null) ...[
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton.tonalIcon(
+                    onPressed: () => _pickEndDate(context, ref, openStart),
+                    icon: const Icon(Icons.flag_outlined),
+                    label: const Text('END PERIOD'),
+                  ),
+                ),
+              ],
+            ],
           ),
           const SizedBox(height: 24),
-          _MonthCalendar(starts: starts, status: status),
+          _MonthCalendar(log: log, status: status),
           const SizedBox(height: 12),
           const _Legend(),
           const SizedBox(height: 24),
-          _History(starts: starts),
+          _History(log: log),
         ],
       ),
     );
@@ -57,7 +78,38 @@ Future<void> _pickStartDate(BuildContext context, WidgetRef ref) async {
     lastDate: today,
   );
   if (picked != null) {
-    await ref.read(periodStartsProvider.notifier).addStart(picked);
+    await ref.read(periodLogProvider.notifier).addStart(picked);
+  }
+}
+
+/// The last day an end date may be set to for the period that began on
+/// [start]: not in the future, not absurdly long, not into the next period.
+DateTime _latestEnd(PeriodLog log, DateTime start) {
+  var latest = dateOnly(DateTime.now());
+  final capped = addDays(start, kMaxPeriodLengthDays - 1);
+  if (capped.isBefore(latest)) latest = capped;
+  final next = log.nextStartAfter(start);
+  if (next != null && !next.isAfter(latest)) latest = addDays(next, -1);
+  return latest;
+}
+
+/// Asks for the last day of the period that began on [start].
+Future<void> _pickEndDate(
+    BuildContext context, WidgetRef ref, DateTime start) async {
+  final log = ref.read(periodLogProvider);
+  final last = _latestEnd(log, start);
+  var initial = log.endOf(start) ?? dateOnly(DateTime.now());
+  if (initial.isAfter(last)) initial = last;
+  if (initial.isBefore(start)) initial = start;
+  final picked = await showDatePicker(
+    context: context,
+    helpText: 'LAST DAY OF PERIOD',
+    initialDate: initial,
+    firstDate: start,
+    lastDate: last,
+  );
+  if (picked != null) {
+    await ref.read(periodLogProvider.notifier).setEnd(start, picked);
   }
 }
 
@@ -88,7 +140,7 @@ class _StatusCard extends StatelessWidget {
         color = AppColors.textSecondary;
       case PeriodPhase.onPeriod:
         final left = status.periodDaysLeft!;
-        headline = 'DAY ${status.dayOfPeriod} OF $kPeriodLengthDays';
+        headline = 'DAY ${status.dayOfPeriod} OF ${status.periodLength}';
         detail = '${left == 1 ? 'Last day' : '$left days left'} '
             '(including today).\nNext period: ${fmt.format(expected!)} (est.)';
       case PeriodPhase.countdown:
@@ -143,10 +195,12 @@ class _StatusCard extends StatelessWidget {
 
 // ─── Calendar ────────────────────────────────────────────────────────────────
 
-class _MonthCalendar extends ConsumerStatefulWidget {
-  const _MonthCalendar({required this.starts, required this.status});
+enum _DayAction { addStart, removeStart, setEnd, clearEnd }
 
-  final List<DateTime> starts;
+class _MonthCalendar extends ConsumerStatefulWidget {
+  const _MonthCalendar({required this.log, required this.status});
+
+  final PeriodLog log;
   final PeriodStatus status;
 
   @override
@@ -162,40 +216,64 @@ class _MonthCalendarState extends ConsumerState<_MonthCalendar> {
   Future<void> _onDayTap(DateTime day) async {
     final today = dateOnly(DateTime.now());
     if (day.isAfter(today)) return;
-    final notifier = ref.read(periodStartsProvider.notifier);
-    final isStart = widget.starts.contains(day);
-    final label = DateFormat('EEE, MMM d').format(day);
+    final notifier = ref.read(periodLogProvider.notifier);
+    final log = widget.log;
+    final isStart = log.starts.contains(day);
+    final fmt = DateFormat('EEE, MMM d');
 
-    final confirmed = await showDialog<bool>(
+    // The period this day belongs to (the latest one that began on or before).
+    final owner = log.latestStartOnOrBefore(day);
+    final ownerEnd = owner == null ? null : log.endOf(owner);
+    final canEnd = owner != null &&
+        owner != day &&
+        ownerEnd != day &&
+        !day.isAfter(_latestEnd(log, owner));
+    final canClearEnd = ownerEnd != null && (ownerEnd == day || isStart);
+
+    final action = await showDialog<_DayAction>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) => SimpleDialog(
         backgroundColor: AppColors.backgroundElevated,
-        title: Text(label),
-        content: Text(isStart
-            ? 'This day is marked as the start of a period.'
-            : 'Mark this day as the first day of a period?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('CANCEL'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(
-              isStart ? 'REMOVE' : 'MARK AS START',
-              style: TextStyle(
-                  color: isStart ? AppColors.destructive : _periodColor),
-            ),
-          ),
+        title: Text(fmt.format(day)),
+        children: [
+          if (isStart)
+            _option(ctx, 'Remove this period', _DayAction.removeStart,
+                color: AppColors.destructive)
+          else
+            _option(ctx, 'Mark as first day of a period', _DayAction.addStart,
+                color: _periodColor),
+          if (canEnd)
+            _option(
+                ctx,
+                'Mark as last day of the period that began '
+                '${DateFormat('MMM d').format(owner)}',
+                _DayAction.setEnd),
+          if (canClearEnd)
+            _option(ctx, 'Clear the end date', _DayAction.clearEnd),
         ],
       ),
     );
-    if (confirmed != true) return;
-    if (isStart) {
-      await notifier.removeStart(day);
-    } else {
-      await notifier.addStart(day);
+
+    switch (action) {
+      case _DayAction.addStart:
+        await notifier.addStart(day);
+      case _DayAction.removeStart:
+        await notifier.removeStart(day);
+      case _DayAction.setEnd:
+        await notifier.setEnd(owner!, day);
+      case _DayAction.clearEnd:
+        await notifier.clearEnd(owner!);
+      case null:
+        break;
     }
+  }
+
+  Widget _option(BuildContext ctx, String text, _DayAction action,
+      {Color? color}) {
+    return SimpleDialogOption(
+      onPressed: () => Navigator.pop(ctx, action),
+      child: Text(text, style: TextStyle(color: color)),
+    );
   }
 
   @override
@@ -262,8 +340,8 @@ class _MonthCalendarState extends ConsumerState<_MonthCalendar> {
                   day: day,
                   isToday: day == today,
                   isFuture: day.isAfter(today),
-                  isStart: widget.starts.contains(day),
-                  isPeriod: isPeriodDay(widget.starts, day),
+                  isStart: widget.log.starts.contains(day),
+                  isPeriod: isPeriodDay(widget.log, day),
                   isPredicted: isPredictedDay(widget.status, day),
                   onTap: () => _onDayTap(day),
                 );
@@ -369,15 +447,17 @@ class _Legend extends StatelessWidget {
 // ─── History ─────────────────────────────────────────────────────────────────
 
 class _History extends ConsumerWidget {
-  const _History({required this.starts});
+  const _History({required this.log});
 
-  /// Newest first.
-  final List<DateTime> starts;
+  final PeriodLog log;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final starts = log.starts; // newest first
     if (starts.isEmpty) return const SizedBox.shrink();
     final fmt = DateFormat('EEE, MMM d, yyyy');
+    final short = DateFormat('EEE, MMM d');
+    final notifier = ref.read(periodLogProvider.notifier);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -393,25 +473,53 @@ class _History extends ConsumerWidget {
         ),
         const SizedBox(height: 8),
         for (var i = 0; i < starts.length; i++)
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(fmt.format(starts[i])),
-            // Gap to the previous (older) start = that cycle's real length.
-            subtitle: i + 1 < starts.length
-                ? Text(
-                    '${_plural(daysBetween(starts[i + 1], starts[i]), 'day')} '
+          Builder(builder: (context) {
+            final start = starts[i];
+            final end = log.endOf(start);
+            final length = _plural(log.lengthOf(start), 'day');
+            final lines = [
+              end != null
+                  ? 'Ended ${short.format(end)} · $length'
+                  : 'No end date · assumed $length',
+              // Gap to the previous (older) start = that cycle's real length.
+              if (i + 1 < starts.length)
+                '${_plural(daysBetween(starts[i + 1], start), 'day')} '
                     'after the previous start',
-                    style: const TextStyle(color: AppColors.textSecondary),
-                  )
-                : null,
-            trailing: IconButton(
-              icon: const Icon(Icons.delete_outline),
-              color: AppColors.textSecondary,
-              onPressed: () => ref
-                  .read(periodStartsProvider.notifier)
-                  .removeStart(starts[i]),
-            ),
-          ),
+            ];
+            return ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(fmt.format(start)),
+              subtitle: Text(
+                lines.join('\n'),
+                style: const TextStyle(color: AppColors.textSecondary),
+              ),
+              isThreeLine: lines.length > 1,
+              trailing: PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert,
+                    color: AppColors.textSecondary),
+                onSelected: (v) {
+                  switch (v) {
+                    case 'end':
+                      _pickEndDate(context, ref, start);
+                    case 'clear':
+                      notifier.clearEnd(start);
+                    case 'delete':
+                      notifier.removeStart(start);
+                  }
+                },
+                itemBuilder: (_) => [
+                  PopupMenuItem(
+                    value: 'end',
+                    child: Text(end == null ? 'Set end date' : 'Change end date'),
+                  ),
+                  if (end != null)
+                    const PopupMenuItem(
+                        value: 'clear', child: Text('Clear end date')),
+                  const PopupMenuItem(value: 'delete', child: Text('Delete')),
+                ],
+              ),
+            );
+          }),
       ],
     );
   }
