@@ -19,6 +19,7 @@ import '../ui/workout/workout_screen.dart';
 import '../ui/todo/todo_screen.dart';
 import '../ui/liabilities/liabilities_screen.dart';
 import '../ui/analysis/analysis_screen.dart';
+import '../ui/period/period_screen.dart';
 
 final goRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -92,6 +93,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/hub/analysis',
         builder: (context, state) => const AnalysisScreen(),
+      ),
+      GoRoute(
+        path: '/hub/period',
+        builder: (context, state) => const PeriodScreen(),
       ),
       GoRoute(
         path: '/log',

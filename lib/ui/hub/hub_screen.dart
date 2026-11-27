@@ -53,6 +53,12 @@ class HubScreen extends StatelessWidget {
               color: Colors.pinkAccent,
               onTap: () => context.push('/hub/analysis'),
             ),
+            _HubCard(
+              title: 'Period Tracker',
+              icon: Icons.water_drop_outlined,
+              color: Color(0xFFE5566D),
+              onTap: () => context.push('/hub/period'),
+            ),
           ],
         ),
       ),
